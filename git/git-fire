@@ -1,0 +1,63 @@
+#!/bin/sh
+
+VERSION="0.2.3"
+BRANCH_PREFIX="fire"
+
+version() {
+    printf "git-fire version %s\n" "$VERSION"
+
+    git --version
+}
+
+current_branch() {
+    basename "$(git symbolic-ref HEAD)"
+}
+
+current_epoch() {
+    date +%a%d%h%G-%H%M%S-%s
+}
+
+user_email() {
+    git config user.email
+}
+
+new_branch() {
+    echo "$BRANCH_PREFIX-$(current_branch)-$(user_email)-$(current_epoch)"
+}
+
+
+fire() {
+    git checkout -b "$(new_branch)"
+
+    # cd to git root directory
+    cd "$(git rev-parse --show-toplevel)"
+
+    git add -A
+
+    if [ -z "$1" ]; then
+        message=":runner: :fire: surviving stuff -> $(current_branch) :question:"
+    else
+        message="$*"
+    fi
+
+    git commit -m "$message" --no-verify
+
+    for remote in $(git remote); do
+        git push "${remote}" "$(current_branch)" || true
+    done
+
+    if [ "$(git stash list)" != '' ]; then
+      for sha in $(git rev-list -g stash); do
+          git push origin "$sha":refs/heads/whatever-stash-"$sha" || true
+      done
+    fi
+
+    printf "\n\nLeave building!\n"
+}
+
+case $1 in
+    -V|--version) version; exit 0 ;;
+    -h|--help) display_help; exit 0 ;;
+esac
+
+fire "$@"
