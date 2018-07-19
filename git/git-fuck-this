@@ -2,12 +2,5 @@
 
 git checkout -- .
 git status -s | cut -d ' ' -f 2 | xargs rm -rf
-echo "."
-echo ".."
-echo "..."
-echo "...."
-echo "....."
-echo "......"
-printf "......."
-printf "[git]:"
-echo "(ノಠ益ಠ)ノ彡┻━┻"
+
+cat ~/.spels/art/fma.ascii
