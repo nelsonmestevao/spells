@@ -3,4 +3,4 @@
 git checkout -- .
 git status -s | cut -d ' ' -f 2 | xargs rm -rf
 
-cat ~/.spels/art/fma.ascii
+cat ~/.spells/art/fma.ascii
