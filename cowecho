@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ls /usr/share/cowsay/cows
-export PICTURES=(
+PICTURES=(
     apt
     beavis.zen
     bong
