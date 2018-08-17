@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+export PICTURES=(
+    dragon
+    dragon-and-cow
+    eyes
+    flaming-sheep
+    ghostbusters
+    head-in
+    kitty
+    koala
+    luke-koala
+    meow
+    satanic
+    skeleton
+    stegosaurus
+    three-eyes
+    turtle
+    tux
+    vader
+    vader-koala
+)
+
+rand=$((RANDOM % 18))
+
+cowsay -f "${PICTURES[rand]}" "$1" | lolcat
