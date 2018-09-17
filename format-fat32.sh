@@ -2,5 +2,5 @@
 
 sudo fdisk -l
 
-sudo mkfs.vat "$1" -I
+sudo mkfs.vfat "$1" -I
 
