@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env sh
 
-if [ "$(playerctl status)" = "Playing" ]; then
-    title=$(exec playerctl metadata xesam:title)
-    artist=$(exec playerctl metadata xesam:artist)
-  echo "$title - $artist"
-else
-  echo ""
+PLAYER=$(playerctl --list-all)
+
+if [ "$PLAYER" = "spotify" ]; then
+    TITLE=$(exec playerctl metadata xesam:title)
+    ARTIST=$(exec playerctl metadata xesam:artist)
+    echo "$TITLE - $ARTIST"
 fi
