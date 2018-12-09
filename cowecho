@@ -2,19 +2,16 @@
 
 # ls /usr/share/cowsay/cows
 PICTURES=(
-    apt
     beavis.zen
     bong
     bud-frogs
     bunny
     calvin
     cheese
-    cock
     cower
     daemon
     dragon
     dragon-and-cow
-    duck
     elephant
     elephant-in-snake
     eyes
