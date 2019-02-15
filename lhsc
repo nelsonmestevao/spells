@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+OUT=${1%.lhs}.hs
+
+awk -f ~/.spells/lol.awk $1 > $OUT
+
+ghc -Wall $OUT
+
