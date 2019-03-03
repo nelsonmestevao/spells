@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# rofi-power
+# Use rofi to call systemctl for shutdown, reboot, etc
+
+# 2016 Oliver Kraitschy - http://okraits.de
+
+OPTIONS="Reboot system\nLock\nShutdown\nSuspend system\nHibernate system"
+
+# source configuration or use default values
+if [ -f $HOME/.config/rofi-power/config ]; then
+  source $HOME/.config/rofi-power/config
+else
+  LAUNCHER="rofi -dmenu -i -p rofi-power"
+  USE_LOCKER="true"
+  LOCKER="betterlockscreen"
+fi
+
+# Show exit wm option if exit command is provided as an argument
+if [ ${#1} -gt 0 ]; then
+  OPTIONS="Exit window manager\n$OPTIONS"
+fi
+
+option=`echo -e $OPTIONS | $LAUNCHER | awk '{print $1}' | tr -d '\r\n'`
+if [ ${#option} -gt 0 ]
+then
+    case $option in
+      Exit)
+        eval $1
+        ;;
+      Reboot)
+        i3exit reboot
+        ;;
+      Shutdown)
+        i3exit shutdown
+        ;;
+      Lock)
+        "$LOCKER" -l dim
+        ;;
+      Suspend)
+        $($USE_LOCKER) && "$LOCKER"; i3exit suspend
+        ;;
+      Hibernate)
+        $($USE_LOCKER) && "$LOCKER"; i3exit hibernate
+        ;;
+      *)
+        ;;
+    esac
+fi
+
