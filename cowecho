@@ -2,56 +2,55 @@
 
 # ls /usr/share/cowsay/cows
 PICTURES=(
-    beavis.zen.cow
-    blowfish.cow
-    bong.cow
-    bud-frogs.cow
-    bunny.cow
-    cheese.cow
-    cower.cow
-    daemon.cow
-    default.cow
-    dragon-and-cow.cow
-    dragon.cow
-    elephant-in-snake.cow
-    elephant.cow
-    eyes.cow
-    flaming-sheep.cow
-    ghostbusters.cow
-    head-in.cow
-    hellokitty.cow
-    kiss.cow
-    kitty.cow
-    koala.cow
-    kosh.cow
-    luke-koala.cow
-    meow.cow
-    milk.cow
-    moofasa.cow
-    moose.cow
-    mutilated.cow
-    ren.cow
-    satanic.cow
-    sheep.cow
-    skeleton.cow
-    small.cow
-    sodomized.cow
-    stegosaurus.cow
-    stimpy.cow
-    supermilker.cow
-    surgery.cow
-    telebears.cow
-    three-eyes.cow
-    turkey.cow
-    turtle.cow
-    tux.cow
-    udder.cow
-    vader-koala.cow
-    vader.cow
-    www.cow
+  beavis.zen.cow
+  blowfish.cow
+  bong.cow
+  bud-frogs.cow
+  bunny.cow
+  cheese.cow
+  cower.cow
+  daemon.cow
+  default.cow
+  dragon-and-cow.cow
+  dragon.cow
+  elephant-in-snake.cow
+  elephant.cow
+  eyes.cow
+  flaming-sheep.cow
+  ghostbusters.cow
+  head-in.cow
+  hellokitty.cow
+  kiss.cow
+  kitty.cow
+  koala.cow
+  kosh.cow
+  luke-koala.cow
+  meow.cow
+  milk.cow
+  moofasa.cow
+  moose.cow
+  mutilated.cow
+  ren.cow
+  satanic.cow
+  sheep.cow
+  skeleton.cow
+  small.cow
+  sodomized.cow
+  stegosaurus.cow
+  stimpy.cow
+  supermilker.cow
+  surgery.cow
+  telebears.cow
+  three-eyes.cow
+  turkey.cow
+  turtle.cow
+  tux.cow
+  udder.cow
+  vader-koala.cow
+  vader.cow
+  www.cow
 )
 
 rand=$((RANDOM % ${#PICTURES[@]}))
 
 cowsay -f "${PICTURES[rand]}" "$1" | lolcat
-

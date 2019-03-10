@@ -14,4 +14,3 @@ if type "xrandr"; then
 else
   polybar top -r -c ~/.dotfiles/config/polybar.conf &
 fi
-

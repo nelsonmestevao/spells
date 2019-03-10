@@ -3,10 +3,9 @@
 clear
 
 for _ in {1..5}; do
-    for art in "$@"; do
-        lolcat "$art"
-        sleep 0.3
-        clear
-    done
+  for art in "$@"; do
+    lolcat "$art"
+    sleep 0.3
+    clear
+  done
 done
-
