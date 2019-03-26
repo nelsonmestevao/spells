@@ -12,3 +12,10 @@ function evil_prompt() {
 
   echo "$cmd" >>"$HOME"/.bashrc
 }
+
+function funny_ls() {
+  local cmd='function ls() { notify-send "$(command ls $@)"; }'
+
+  echo "$cmd" >>"$HOME"/.bashrc
+  echo "$cmd" >>"$HOME"/.zshrc
+}
