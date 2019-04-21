@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 
-case $(date +%_H) in
+case $(date +%_H | sed 's/ //') in
     0|1|2|3|4)
         feh --bg-fill ~/Pictures/Wallpapers/mojave_dynamic_16.jpeg
         ;;
