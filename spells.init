@@ -1,0 +1,4 @@
+# vim: ft=shell
+
+export SPELLS="$HOME/.spells:$HOME/.spells/git:$HOME/.spells/rofi"
+
