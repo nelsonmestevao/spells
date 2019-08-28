@@ -1,0 +1,37 @@
+#!/usr/bin/env Rscript
+
+# https://www.r-bloggers.com/passing-arguments-to-an-r-script-from-command-lines/
+
+library(httr)
+
+send_smr <- function(phone_number, text_message) {
+    url <- "https://textbelt.com/text"
+
+    sms <- list(
+                phone = phone_number,
+                message = text_message,
+                key = "textbelt"
+    )
+
+    result <- POST(url, body = sms, encode = "form")
+
+    content(result)
+}
+
+getline <- function(prompt="Enter text: ") {
+    if (interactive()) {
+        txt <- readline(prompt)
+    } else {
+        cat(prompt);
+        txt <- readLines("stdin",n=1);
+    }
+
+    return(txt)
+}
+
+phone_number <- getline(prompt="Text to: ")
+text_message <- getline(prompt="Message: ")
+
+send_smr(phone_number, text_message)
+
+# vim: set ft=r
