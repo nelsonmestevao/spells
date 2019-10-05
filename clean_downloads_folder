@@ -3,17 +3,15 @@
 
 import os, sys
 
-if os.name == "posix":
-    downloads_folder = os.path.join(os.path.expanduser("~"), "Downloads")
-else:
-    sys.exit("Operating system not supported")
+downloads_folder = os.path.join(os.path.expanduser("~"), "Downloads")
+os.chdir(downloads_folder)
 
 
 def move_file_to(file, destination):
-    src = os.path.join(downloads_folder, file)
-    dst = os.path.join(downloads_folder, destination, file)
-    if os.path.isfile(src):
-        os.rename(src, dst)
+    if not os.path.isdir(destination):
+        os.makedirs(destination)
+    if os.path.isfile(file):
+        os.rename(file, os.path.join(destination, file))
 
 
 for file in os.listdir(downloads_folder):
