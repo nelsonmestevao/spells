@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ ! -d .git ]; then
     echo "Must cd to git top-level directory"
@@ -14,5 +14,5 @@ fi
 origin=$( perl -lne'print "$1" and exit if /github.com[:\/](\w+\/\w+)/' \
           < .git/config )
 
-xdg-open "https://github.com/$origin/tree/$branch"
+xdg-open "https://github.com/$origin/tree/$branch" & disown
 
