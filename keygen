@@ -1,0 +1,43 @@
+#!/usr/bin/env sh
+
+SSH_PUB=$HOME/.ssh/id_rsa.pub
+
+display_help() {
+  cat <<EOF
+USAGE:
+        keygen [OPTIONS] EMAIL
+
+EXAMPLE:
+        keygen email@example.com
+
+OPTIONS:
+        -h, --help          Display this help message.
+EOF
+}
+
+generate_new_key() {
+  ssh-keygen -t rsa -C "$1"
+
+  if command -v xclip >/dev/null 2>&1; then
+    xclip -selection clipboard <"$SSH_PUB"
+  else
+    echo "[ssh]: xclip not found, you need to copy manually the following key"
+    cat "$SSH_PUB"
+    exit 1
+  fi
+
+  echo "[ssh]: SSH public key copied into the clipboard"
+}
+
+case $1 in
+-h | --help)
+  display_help
+  ;;
+*@*)
+  generate_new_key "$1"
+  ;;
+*)
+  display_help >&2
+  exit 1
+  ;;
+esac
