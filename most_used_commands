@@ -8,26 +8,26 @@ history_file_name = os.path.expanduser("~") + "/.zsh_history"
 os.system(f'zsh -c "source ~/.zshrc; alias > {aliases_file_name}"')
 
 aliases = {}
-aliases_file = open(aliases_file_name)
-for line in aliases_file:
-    alias, command = line.strip().split("=", 1)
-    aliases[alias] = re.sub("'", "", command.split()[0])
+with open(aliases_file_name) as aliases_file:
+    for line in aliases_file:
+        alias, command = line.strip().split("=", 1)
+        aliases[alias] = re.sub("'", "", command.split()[0])
 
 statistics = {}
-history_file = open(history_file_name)
-for line in history_file:
-    trash, command = line.strip().split(";", 1)
-    command = command.split()[0]
-    if command in aliases:
-        if aliases[command] in statistics:
-            statistics[aliases[command]] += 1
+with open(history_file_name) as history_file:
+    for line in history_file:
+        trash, command = line.strip().split(";", 1)
+        command = command.split()[0]
+        if command in aliases:
+            if aliases[command] in statistics:
+                statistics[aliases[command]] += 1
+            else:
+                statistics[aliases[command]] = 1
         else:
-            statistics[aliases[command]] = 1
-    else:
-        if command in statistics:
-            statistics[command] += 1
-        else:
-            statistics[command] = 1
+            if command in statistics:
+                statistics[command] += 1
+            else:
+                statistics[command] = 1
 
 total = 0
 for v in statistics.values():
