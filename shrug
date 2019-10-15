@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+copy_cmd="xclip -selection clipboard"
+
+echo "¯\_(ツ)_/¯" | $copy_cmd
+
+# vim: ft=shell
