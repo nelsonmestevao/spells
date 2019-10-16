@@ -4,6 +4,7 @@
 import os, sys
 
 courses = sys.argv[1:]
+documents_folder = os.path.expanduser("~") + "/Documents"
 
 subfolders = [
     "Apontamentos",
@@ -14,6 +15,8 @@ subfolders = [
     "Testes",
     "Projetos",
 ]
+
+os.chdir(documents_folder)
 
 for course in courses:
     for subfolder in subfolders:
