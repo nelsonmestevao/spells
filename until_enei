@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+start_ts=$(date '+%s')
+end_ts=$(date -d "2020-02-23" '+%s')
+
+echo "scale=2; ( $end_ts - $start_ts )/(60*60*24)" | bc
