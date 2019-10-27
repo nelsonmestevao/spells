@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+clear
+
+DIALOG=(
+  "HARRY: My name is Harry Potter."
+  "DIARY: Hello Harry Potter, my name is Tom Riddle."
+  "HARRY: Do you know anything about the Chamber of Secrets?"
+  "DIARY: Yes."
+  "HARRY: Can you tell me?"
+  "DIARY: No."
+  "DIARY: But I can show you. Let me take you back fifty years ago... 13th June..."
+)
+
+for D in "${DIALOG[@]}"; do
+  clear
+  echo -e "\n\n"
+  if [[ $D == "HARRY:"* ]]; then
+    pv -qL6 <<<$'\033[1;33m'$D$'\e[37m'
+  else
+    pv -qL9 <<<$'\033[1;32m'$D$'\e[37m'
+  fi
+  sleep 3
+done
