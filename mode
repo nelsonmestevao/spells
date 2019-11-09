@@ -2,21 +2,32 @@
 
 function display_help() {
   cat <<EOF
-        mode dark
-        mode work // 2 screens expandido
+        mode dark | light | default
+        mode work  // 2 screens expandido
         mode chill // 1 screens
         mode pitch // 2 screens expandido (apresentação)
-        mode demo // 2 screens mirror
+        mode demo  // 2 screens mirror
 
         mode -h, --help
 
         //TODO
-        remover notificações em modo pitch era capaz de ser bem jogadosage:
+        remover notificações em modo pitch era capaz de ser bem jogado
 EOF
 }
 
 function change_theme_to() {
-  echo "Theme changed to $1!"
+  case $1 in
+  light)
+    color -s google-light
+    ;;
+  dark)
+    color -s google-dark
+    ;;
+  default)
+    color -s tomorrow
+    ;;
+  esac
+    echo "Theme changed to $1!"
 }
 
 function change_screen_to() {
@@ -43,7 +54,7 @@ case $1 in
 -h | --help)
   display_help
   ;;
-dark | light)
+dark | light | default)
   change_theme_to "$1"
   ;;
 work | chill | pitch | demo)
