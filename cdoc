@@ -1,0 +1,7 @@
+#!/usr/bin/env sh
+
+# cdoc (see document): A script that uses pandoc to cat a .docx/.doc files.
+
+# TODO: Receive more than one argument
+pandoc "$1" -tplain -o /dev/stdout
+
