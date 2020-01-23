@@ -1,0 +1,21 @@
+#!/bin/bash
+
+HUGO="a85579"
+NELSON="a76434"
+PEDRO="a85493"
+RICARDO="a84123"
+
+UCS=(
+  H506N2 # Computação Gráfica
+  H506N4 # Comunicações por Computador
+  H506N6 # Laboratórios de Informática IV
+  H506N3 # Modelos Estocásticos de Investigação Operacional
+  H506N5 # Processamento de Linguagens
+  H506N1 # Sistemas de Representação de Conhecimento e Raciocínio
+)
+
+for uc in "${UCS[@]}"; do
+  curl -X GET "https://dcmiei.lsd.di.uminho.pt/grupos/grupo/cria/$uc/$HUGO,$NELSON,$PEDRO,$RICARDO"
+  echo ""
+done
+
