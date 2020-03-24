@@ -1,4 +1,4 @@
-# vim: ft=shell
+# vim: ft=zsh
 
-export SPELLS="$HOME/.spells:$HOME/.spells/git:$HOME/.spells/rofi"
+export PATH="$PATH:$SPELLS:$SPELLS/git:$SPELLS/rofi"
 
