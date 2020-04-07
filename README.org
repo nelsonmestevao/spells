@@ -1,0 +1,16 @@
+#+TITLE:     Collection of Spells :crystal_ball:
+#+SUBTITLE:  How to do magic in the command-line
+#+AUTHOR:    Nelson Estevão
+#+EMAIL:     hello@estevao.xyz
+#+DESCRIPTION: Small scripts in all kinds of languages
+#+KEYWORDS:  bash, python
+#+LANGUAGE:  en
+
+* :rocket: Getting Started
+
+** :inbox_tray: Prerequisites
+
+** :hammer: Development
+
+** :hammer_and_wrench: Tools
+
