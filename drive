@@ -1,0 +1,55 @@
+#!/bin/bash
+
+UMINHO_LOCAL_PATH=$HOME/Documents
+UMINHO_REMOTE_PATH="Universidade do Minho/Mestrado Integrado em Engenharia Informática/3. Ano/2. Semestre"
+
+function display_help() {
+  cat <<EOF
+    drive sync
+    drive check | diff
+
+        - (university, um, documents)
+
+    drive -h, --help
+EOF
+}
+
+function check() {
+  case $1 in
+  university | um | documents)
+      rclone check --verbose -P "$UMINHO_LOCAL_PATH" gdrive:"$UMINHO_REMOTE_PATH"
+    ;;
+  *)
+      echo "Unknown check:" "$@"
+    ;;
+  esac
+}
+
+function sync() {
+  case $1 in
+  university | um | documents)
+      rclone sync --verbose -P "$UMINHO_LOCAL_PATH" gdrive:"$UMINHO_REMOTE_PATH"
+    ;;
+  *)
+      echo "Unknown sync:" "$@"
+    ;;
+  esac
+}
+
+case $1 in
+-h | --help)
+  display_help
+  ;;
+check | diff)
+  shift 1
+  check "$@"
+  ;;
+sync)
+  shift 1
+  sync "$@"
+  ;;
+*)
+  display_help >&2
+  exit 1
+  ;;
+esac
