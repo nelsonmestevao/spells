@@ -1,34 +1,38 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 function display_help() {
   cat <<EOF
+    THEMES
         mode dark | light | default
+
+    SCREENS
         mode work  // 2 screens side-by-side
         mode pitch // 2 screens 2nd on top
         mode chill // 1 screen (eDP1)
         mode focus // 1 screen (HDMI1)
         mode demo  // 2 screens mirror
 
+    OPTIONS
+
         mode -h, --help
 
-        //TODO
+    //TODO
         remover notificações em modo pitch era capaz de ser bem jogado
 EOF
 }
 
 function change_theme_to() {
-  case $1 in
-    light)
-      color -s google-light
-      ;;
-    dark)
-      color -s google-dark
-      ;;
-    default)
-      color -s brewer
-      ;;
-  esac
-  echo "Theme changed to $1!"
+  declare -A themes=(
+    ["dark"]="google-dark"
+    ["light"]="google-light"
+    ["default"]="brewer"
+  )
+
+  declare -r theme=${themes[$1]}
+
+  color -s "$theme"
+
+  echo "Theme changed to $theme!"
 }
 
 function change_screen_to() {
@@ -69,4 +73,3 @@ case $1 in
     exit 1
     ;;
 esac
-
