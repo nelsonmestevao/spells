@@ -25,7 +25,7 @@ function change_theme_to() {
       color -s google-dark
       ;;
     default)
-      color -s tomorrow
+      color -s brewer
       ;;
   esac
   echo "Theme changed to $1!"
