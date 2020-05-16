@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+SPELLS="$HOME/.spells"
+
+SCRIPT_PATH="$SPELLS/$1"
+
+if [ ! -s "$SCRIPT_PATH" ]; then
+    echo "#!/usr/bin/env bash
+" > "$SCRIPT_PATH"
+    chmod u+x "$SCRIPT_PATH"
+fi
+
+$EDITOR "+${2-2}" "$SCRIPT_PATH"
