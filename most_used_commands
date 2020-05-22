@@ -16,6 +16,9 @@ with open(aliases_file_name) as aliases_file:
 statistics = {}
 with open(history_file_name) as history_file:
     for line in history_file:
+        # if only as \n char we should ignore it
+        if len(line) == 1:
+            continue
         trash, command = line.strip().split(";", 1)
         command = command.split()[0]
         if command in aliases:
@@ -36,9 +39,10 @@ for v in statistics.values():
 results = sorted(statistics.items(), key=lambda x: x[1], reverse=True)
 
 n = 1
+print("")
 for result in results:
     k, v = result
     print("{:2}   {:5.2f}% {:5}   {}".format(n, v / total * 100, v, k))
-    if n == 10:
+    if n == 20:
         break
     n = n + 1
