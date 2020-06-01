@@ -42,7 +42,7 @@ n = 1
 print("")
 for result in results:
     k, v = result
-    print("{:2}   {:5.2f}% {:5}   {}".format(n, v / total * 100, v, k))
-    if n == 20:
+    print("{:3}   {:5.2f}% {:5}   {}".format(n, v / total * 100, v, k))
+    if n == 40:
         break
     n = n + 1
