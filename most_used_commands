@@ -19,7 +19,11 @@ with open(history_file_name) as history_file:
         # if only as \n char we should ignore it
         if len(line) == 1:
             continue
-        trash, command = line.strip().split(";", 1)
+        try:
+            trash, command = line.strip().split(";", 1)
+        except:
+            continue
+            print("error line: ", line)
         command = command.split()[0]
         if command in aliases:
             if aliases[command] in statistics:
