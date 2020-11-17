@@ -10,14 +10,13 @@ function display_help() {
         mode pitch // 2 screens 2nd on top
         mode chill // 1 screen (eDP1)
         mode focus // 1 screen (HDMI1)
-        mode demo  // 2 screens mirror
+        mode demo  // 2 screens mirror and notifications off
 
     OPTIONS
 
         mode -h, --help
 
-    //TODO
-        remover notificações em modo pitch era capaz de ser bem jogado
+Notes: Activate the notifications with dunstctl set-pause false!
 EOF
 }
 
@@ -51,6 +50,7 @@ function change_screen_to() {
       ;;
     demo)
       xrandr --output HDMI1 --auto --same-as eDP1 --output eDP1 --primary --auto
+      dunstctl set-paused true
       ;;
   esac
 
