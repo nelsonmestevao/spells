@@ -1,17 +1,29 @@
 #!/bin/sh
 
-if command -v xclip &> /dev/null; then
-    if [ -f $@ ]; then
-        cat $@ | xclip -selection clipboard
-    else
-        echo $@ | xclip -selection clipboard
-    fi
+copy_file() {
+    # only works with text and PNG ¯\_(ツ)_/¯
+  FILE=$1
+  EXTENSION=${FILE#*.}
+
+  if file $FILE | grep -qE 'image'; then
+    xclip -selection clipboard -t image/$EXTENSION -i $FILE
+  else
+    xclip -selection clipboard -i $@
+  fi
+}
+
+if command -v xclip &>/dev/null; then
+  if [ -f $@ ]; then
+      copy_file $@
+  else
+    echo $@ | xclip -selection clipboard
+  fi
 else
-    if [ -f $@ ]; then
-        cat $@ | xsel -ib
-    else
-        echo $@ | xsel -ib
-    fi
+  if [ -f $@ ]; then
+    cat $@ | xsel -ib
+  else
+    echo $@ | xsel -ib
+  fi
 fi
 
-# vim: ft=shell
+#vim: ft=sh
