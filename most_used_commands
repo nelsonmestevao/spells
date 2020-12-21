@@ -10,8 +10,12 @@ os.system(f'zsh -c "source ~/.zshrc; alias > {aliases_file_name}"')
 aliases = {}
 with open(aliases_file_name) as aliases_file:
     for line in aliases_file:
-        alias, command = line.strip().split("=", 1)
-        aliases[alias] = re.sub("'", "", command.split()[0])
+        try:
+            alias, command = line.strip().split("=", 1)
+            aliases[alias] = re.sub("'", "", command.split()[0])
+        except:
+            continue
+            print("error line: ", line)
 
 statistics = {}
 with open(history_file_name) as history_file:
@@ -21,10 +25,10 @@ with open(history_file_name) as history_file:
             continue
         try:
             trash, command = line.strip().split(";", 1)
+            command = command.split()[0]
         except:
             continue
             print("error line: ", line)
-        command = command.split()[0]
         if command in aliases:
             if aliases[command] in statistics:
                 statistics[aliases[command]] += 1
