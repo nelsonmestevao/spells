@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 SSH_PUB=$HOME/.ssh/id_rsa.pub
 
 display_help() {
   cat <<EOF
 USAGE:
-        keygen [OPTIONS] EMAIL
+        keygen [OPTIONS] [COMMENT]
 
 EXAMPLE:
         keygen email@example.com
@@ -16,7 +16,8 @@ EOF
 }
 
 generate_new_key() {
-  ssh-keygen -t rsa -C "$1"
+  local COMMENT=${1:-$(whoami)@$(uname -n)}
+  ssh-keygen -t rsa -b 4096 -C "$COMMENT"
 
   if command -v xclip >/dev/null 2>&1; then
     xclip -selection clipboard <"$SSH_PUB"
@@ -30,14 +31,10 @@ generate_new_key() {
 }
 
 case $1 in
--h | --help)
-  display_help
-  ;;
-*@*)
-  generate_new_key "$1"
-  ;;
-*)
-  display_help >&2
-  exit 1
-  ;;
+  -h | --help)
+    display_help
+    ;;
+  *)
+    generate_new_key "$1"
+    ;;
 esac
