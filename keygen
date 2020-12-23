@@ -5,7 +5,7 @@ SSH_PUB=$HOME/.ssh/id_rsa.pub
 display_help() {
   cat <<EOF
 USAGE:
-        keygen [OPTIONS] [COMMENT]
+        keygen [OPTIONS] [<comment>]
 
 EXAMPLE:
         keygen email@example.com
