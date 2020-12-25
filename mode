@@ -1,22 +1,39 @@
 #!/usr/bin/env bash
 
+set -Eeuo pipefail
+
+BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
+cd "${BASE_DIR}/.." || exit 127
+
+# shellcheck source=./helpers.sh
+. helpers.sh
+
+PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
+VERSION=0.4.0
+
 function display_help() {
   cat <<EOF
-    THEMES
-        mode dark | light | default
+  $(help_section Usage)
+    ${PROGRAM} [options] (<theme> | <screen>)
 
-    SCREENS
-        mode work  // 2 screens side-by-side
-        mode pitch // 2 screens 2nd on top
-        mode chill // 1 screen (eDP1)
-        mode focus // 1 screen (HDMI1)
-        mode demo  // 2 screens mirror and notifications off
+  $(help_section Themes)
+    dark
+    light
+    default
 
-    OPTIONS
+  $(help_section Screens)
+    work            2 screens side-by-side
+    pitch           2 screens 2nd on top
+    chill           1 screen (eDP1)
+    focus           1 screen (HDMI1)
+    demo            2 screens mirror and notifications off
 
-        mode -h, --help
+  $(help_section Options)
+    -h, --help      Show this screen.
+    -v, --version   Show version.
 
-Notes: Activate the notifications with dunstctl set-pause false!
+  $(help_section Notes)
+    $(italic "Activate the notifications with 'dunstctl set-pause false'!")
 EOF
 }
 
@@ -58,9 +75,12 @@ function change_screen_to() {
   i3-msg restart
 }
 
-case $1 in
+case ${1:-error} in
   -h | --help)
     display_help
+    ;;
+  -v | --version)
+    display_version "$PROGRAM" "$VERSION"
     ;;
   dark | light | default)
     change_theme_to "$1"
