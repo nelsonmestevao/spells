@@ -1,22 +1,35 @@
 #!/usr/bin/env bash
 
-SSH_PUB=$HOME/.ssh/id_rsa.pub
+set -Eeuo pipefail
 
-display_help() {
+BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
+cd "${BASE_DIR}/.." || exit 127
+
+# shellcheck source=./helpers.sh
+. helpers.sh
+
+PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
+VERSION=0.9.0
+
+function display_help() {
   cat <<EOF
-USAGE:
-        keygen [OPTIONS] [<comment>]
+  $(help_section Usage)
+    ${PROGRAM} [OPTIONS] rsa [<comment>]
 
-EXAMPLE:
-        keygen email@example.com
+  $(help_section Options)
+    -h, --help      Show this screen.
+    -v, --version   Show version.
 
-OPTIONS:
-        -h, --help          Display this help message.
+  $(help_section Examples)
+    ${PROGRAM} rsa email@example.com
 EOF
 }
 
-generate_new_key() {
-  local COMMENT=${1:-$(whoami)@$(uname -n)}
+function generate_new_key() {
+  local COMMENT=$1
+  local SSH_PUB="$HOME/.ssh/id_rsa.pub"
+
+  #TODO: add select to generate multiple key types
   ssh-keygen -t rsa -b 4096 -C "$COMMENT"
 
   if command -v xclip >/dev/null 2>&1; then
@@ -30,11 +43,18 @@ generate_new_key() {
   echo "[ssh]: SSH public key copied into the clipboard"
 }
 
-case $1 in
+case ${1:-error} in
   -h | --help)
     display_help
     ;;
+  -v | --version)
+    display_version "$PROGRAM" "$VERSION"
+    ;;
+  rsa)
+    generate_new_key "${2:-$(whoami)@$(uname -n)}"
+    ;;
   *)
-    generate_new_key "$1"
+    display_help >&2
+    exit 1
     ;;
 esac
