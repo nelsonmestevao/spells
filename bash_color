@@ -1,12 +1,57 @@
 #!/usr/bin/env bash
 
-if [[ $# -ne 3 ]]; then
-  echo "Usage: $0 R G B"
-else
-  echo -en "\e[48;2;$1;$2;$3m TEST \e[0m"
+set -Eeuo pipefail
+
+BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
+cd "${BASE_DIR}/.." || exit 127
+
+# shellcheck source=./helpers.sh
+. helpers.sh
+
+PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
+VERSION=0.5.0
+
+function display_help() {
+  cat <<EOF
+  $(help_section Usage)
+    ${PROGRAM} R G B [TEXT]
+    ${PROGRAM} [options]
+
+  $(help_section Options)
+    -h, --help      Show this screen.
+    -v, --version   Show version.
+EOF
+}
+
+function print_color() {
+  TEXT=${4:-" TEST "}
+
+  echo -en "\e[48;2;$1;$2;$3m$TEXT\e[0m"
   echo -n ":  "
-  echo "\e[48;2;$1;$2;$3m TEST \e[0m"
-  echo -en "\e[38;2;$1;$2;$3m TEST \e[0m"
+  echo "\e[48;2;$1;$2;$3m$TEXT\e[0m"
+  echo -en "\e[38;2;$1;$2;$3m$TEXT\e[0m"
   echo -n ":  "
-  echo "\e[38;2;$1;$2;$3m TEST \e[0m"
-fi
+  echo "\e[38;2;$1;$2;$3m$TEXT\e[0m"
+}
+
+case ${1:-noption} in
+  -h | --help)
+    display_help
+    exit 0
+    ;;
+  -v | --version)
+    display_version "$PROGRAM" "$VERSION"
+    exit 0
+    ;;
+esac
+
+case $# in
+  3 | 4)
+    print_color "$@"
+    ;;
+  *)
+    display_help >&2
+    exit 1
+    ;;
+esac
+
