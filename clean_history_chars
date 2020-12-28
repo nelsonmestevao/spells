@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+FILE=${1:-$HOME/.zsh_history}
+
+sed -i 's/Â´/e /g' "$FILE"
+sed -i 's/Ã¢/â/g' "$FILE"
+sed -i 's/Ãª/ê/g' "$FILE"
+sed -i 's/Ãº/ú/g' "$FILE"
+sed -i 's/Ã/Á/g' "$FILE"
+sed -i 's/Ã­/í/g' "$FILE"
+sed -i 's/Ã§/ç/g' "$FILE"
+sed -i 's/Ã£/ã/g' "$FILE"
+sed -i 's/Ã³/ó/g' "$FILE"
+sed -i 's/Ã¡/á/g' "$FILE"
+sed -i 's/Ã©/é/g' "$FILE"
+
+sed -i 's/�/á/g' "$FILE"
+sed -i 's/[/[/g' "$FILE"
+
+sed -i 's/â/a/g' "$FILE"
+sed -i 's/Â/a/g' "$FILE"
+sed -i 's/ê/e/g' "$FILE"
+sed -i 's/Ê/e/g' "$FILE"
+sed -i 's/ú/u/g' "$FILE"
+sed -i 's/Ú/u/g' "$FILE"
+sed -i 's/í/i/g' "$FILE"
+sed -i 's/Í/i/g' "$FILE"
+sed -i 's/ç/c/g' "$FILE"
+sed -i 's/Ç/c/g' "$FILE"
+sed -i 's/ã/a/g' "$FILE"
+sed -i 's/Ã/a/g' "$FILE"
+sed -i 's/ó/o/g' "$FILE"
+sed -i 's/Ó/o/g' "$FILE"
+sed -i 's/á/a/g' "$FILE"
+sed -i 's/Á/A/g' "$FILE"
+sed -i 's/é/e/g' "$FILE"
+sed -i 's/É/e/g' "$FILE"
+
+sed -i -e '/^[^:]/d' "$FILE"
