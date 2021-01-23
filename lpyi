@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+OUT=$(mktemp -d)/${1}.py
+
+awk -f ~/.spells/lol.awk "$1" >"$OUT"
+
+ipython -i "$OUT
