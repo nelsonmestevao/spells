@@ -18,7 +18,7 @@ with open(aliases_file_name) as aliases_file:
             print("error line: ", line)
 
 statistics = {}
-with open(history_file_name) as history_file:
+with open(history_file_name, encoding="utf8", errors='ignore') as history_file:
     for line in history_file:
         # print(line)
         # if only as \n char we should ignore it
