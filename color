@@ -57,149 +57,169 @@ Commands:
   <colorscheme>               same as above"
 
 if [[ ! -v EDITOR ]]; then
-	EDITOR=vim
+  EDITOR=vim
 fi
 
-function die () {
-	echo -e "$*" >&2
-	exit 1
+function die() {
+  echo -e "$*" >&2
+  exit 1
 }
 
 function usage() {
-	die "$USAGE"
+  die "$USAGE"
 }
 
 function help() {
-	echo "$HELP"
+  echo "$HELP"
 }
 
 function update_config() {
-	local color="$1"
+  local color="$1"
 
-	cat "$color" > "$CONFIG"
-	echo >> "$CONFIG"
-	cat "$OPTION" >> "$CONFIG"
+  cat "$color" >"$CONFIG"
+  echo >>"$CONFIG"
+  cat "$OPTION" >>"$CONFIG"
 }
 
 function set_current_colorscheme() {
-	local color_name="$1"
-	echo "$color_name" > "$THEME"
+  local color_name="$1"
+  echo "$color_name" >"$THEME"
 }
 
-function get_current_colorshceme() {
-	echo $(head -1 "$THEME")
+function get_current_colorscheme() {
+  echo $(head -1 "$THEME")
 }
 
 function switch_colorscheme() {
-	local color_name="$1"
-	local color="$COLOR_PATH"/"$color_name"
+  local color_name="$1"
+  local color="$COLOR_PATH"/"$color_name"
 
-	[[ ! -f "$color" ]] && die 'Unknown colorscheme: '"$color_name"
+  [[ ! -f "$color" ]] && die 'Unknown colorscheme: '"$color_name"
 
-	update_config "$color"
-	set_current_colorscheme "$color_name"
-	reload_config
+  update_config "$color"
+  set_current_colorscheme "$color_name"
+  reload_config
 }
 
 function reload_colorscheme() {
-	switch_colorscheme "$(get_current_colorshceme)"
-	reload_config
+  switch_colorscheme "$(get_current_colorscheme)"
+  reload_config
 }
 
 function edit_colorscheme() {
-	[[ "$#" == 0 ]] && local color_name="$(get_current_colorshceme)" || local color_name="$1"
-	"$EDITOR" "$COLOR_PATH"/"$color_name"
+  [[ "$#" == 0 ]] && local color_name="$(get_current_colorscheme)" || local color_name="$1"
+  "$EDITOR" "$COLOR_PATH"/"$color_name"
 }
 
 function reload_config() {
-	killall -USR1 termite
+  killall -USR1 termite
 }
 
 function list_colorscheme() {
-	ls -1 "$COLOR_PATH"
+  ls -1 "$COLOR_PATH"
 }
 
 function cycle_forward_colorscheme() {
-	cycle_colorscheme 'forward'
+  cycle_colorscheme 'forward'
 }
 
 function cycle_backward_colorscheme() {
-	cycle_colorscheme 'backward'
+  cycle_colorscheme 'backward'
 }
 
 function cycle_colorscheme() {
-	local color_names=($(list_colorscheme))
-	local current_color_name=$(get_current_colorshceme)
-	local direction="$1"
+  local color_names=($(list_colorscheme))
+  local current_color_name=$(get_current_colorscheme)
+  local direction="$1"
 
-	for index in "${!color_names[@]}"; do
-		if [[ "${color_names[index]}" == "$current_color_name" ]]; then
+  for index in "${!color_names[@]}"; do
+    if [[ "${color_names[index]}" == "$current_color_name" ]]; then
 
-			if [[ "$direction" == 'forward' ]]; then
-				if ((index == "${#color_names[@]}" - 1)); then
-					switch_colorscheme "${color_names[0]}"
-					echo 'Switch to colorscheme' "${color_names[0]}"
-				else
-					switch_colorscheme "${color_names[index+1]}"
-					echo 'Switch to colorscheme' "${color_names[index+1]}"
-				fi
-			elif [[ "$direction" == 'backward' ]]; then
-				switch_colorscheme "${color_names[index-1]}"
-				echo 'Switch to colorscheme '"${color_names[index-1]}"
-			fi
-			return
+      if [[ "$direction" == 'forward' ]]; then
+        if ((index == "${#color_names[@]}" - 1)); then
+          switch_colorscheme "${color_names[0]}"
+          echo 'Switch to colorscheme' "${color_names[0]}"
+        else
+          switch_colorscheme "${color_names[index + 1]}"
+          echo 'Switch to colorscheme' "${color_names[index + 1]}"
+        fi
+      elif [[ "$direction" == 'backward' ]]; then
+        switch_colorscheme "${color_names[index - 1]}"
+        echo 'Switch to colorscheme '"${color_names[index - 1]}"
+      fi
+      return
 
-		fi
-	done
+    fi
+  done
 }
 
 function main() {
-	local termite_path="$HOME"'/.config/termite'
-	local OPTION="$termite_path"'/option'
-	local CONFIG="$termite_path"'/config'
-	local THEME="$termite_path"'/theme'
-	local COLOR_PATH="$termite_path"'/color'
+  local termite_path="$HOME"'/.config/termite'
+  local OPTION="$termite_path"'/option'
+  local CONFIG="$termite_path"'/config'
+  local THEME="$termite_path"'/theme'
+  local COLOR_PATH="$termite_path"'/color'
 
-	local cmd="${1:-}"
-	local color="${2:-}"
-	case "$#" in
-		0)
-			usage ;;
-		1)
-			case "$cmd" in
-				-h|--help)
-					help ;;
-				-c|--cycle)
-					cycle_forward_colorscheme ;;
-				-C|--Cycle)
-					cycle_backward_colorscheme ;;
-				-e|--edit)
-					edit_colorscheme ;;
-				-l|--list)
-					list_colorscheme ;;
-				-r|--reload)
-					reload_colorscheme ;;
-				-s|--switch)
-					die "Command should be: "$SCRIPT_NAME" -s <colorscheme>\n"$USAGE"" ;;
-				-*)
-					die "Invalid argument\n""$USAGE" ;;
-				*)
-					switch_colorscheme "$1" ;;
-			esac ;;
-		2)
-			case "$cmd" in
-				-e|--edit)
-					edit_colorscheme "$color" ;;
-				-s|--switch)
-					switch_colorscheme "$color" ;;
-				-*)
-					die "Invalid argument\n""$USAGE" ;;
-				*)
-					usage ;;
-			esac ;;
-		*)
-			usage ;;
-	esac
+  local cmd="${1:-}"
+  local color="${2:-}"
+  case "$#" in
+    0)
+      usage
+      ;;
+    1)
+      case "$cmd" in
+        -h | --help)
+          help
+          ;;
+        -c | --cycle)
+          cycle_forward_colorscheme
+          ;;
+        -C | --Cycle)
+          cycle_backward_colorscheme
+          ;;
+        -e | --edit)
+          edit_colorscheme
+          ;;
+        -l | --list)
+          list_colorscheme
+          ;;
+        -r | --reload)
+          reload_colorscheme
+          ;;
+        -s | --switch)
+          die "Command should be: "$SCRIPT_NAME" -s <colorscheme>\n"$USAGE""
+          ;;
+        get)
+          get_current_colorscheme
+          ;;
+        -*)
+          die "Invalid argument\n""$USAGE"
+          ;;
+        *)
+          switch_colorscheme "$1"
+          ;;
+      esac
+      ;;
+    2)
+      case "$cmd" in
+        -e | --edit)
+          edit_colorscheme "$color"
+          ;;
+        -s | --switch)
+          switch_colorscheme "$color"
+          ;;
+        -*)
+          die "Invalid argument\n""$USAGE"
+          ;;
+        *)
+          usage
+          ;;
+      esac
+      ;;
+    *)
+      usage
+      ;;
+  esac
 }
 
 main "$@"
