@@ -5,24 +5,24 @@ copy_file() {
   FILE=$1
   EXTENSION=${FILE#*.}
 
-  if file $FILE | grep -qE 'image'; then
-    xclip -selection clipboard -t image/$EXTENSION -i $FILE
+  if file $FILE | grep -qE 'image' &>/dev/null; then
+    xclip -selection clipboard -t image/"$EXTENSION" -i "$FILE"
   else
-    xclip -selection clipboard -i $@
+    xclip -selection clipboard -i "$@"
   fi
 }
 
 if command -v xclip &>/dev/null; then
-  if [ -f $@ ]; then
-      copy_file $@
+  if [ -f "$1" ]; then
+      copy_file "$1"
   else
-    echo $@ | xclip -selection clipboard
+    echo "$1" | xclip -selection clipboard
   fi
 else
-  if [ -f $@ ]; then
-    cat $@ | xsel -ib
+  if [ -f "$1" ]; then
+    cat "$1" | xsel -ib
   else
-    echo $@ | xsel -ib
+    echo "$1" | xsel -ib
   fi
 fi
 
