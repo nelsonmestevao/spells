@@ -71,8 +71,8 @@ function change_screen_to() {
       ;;
   esac
 
-  echo "Changed to mode $1!"
   i3-msg restart
+  echo "Changed to mode $1!"
 }
 
 case ${1:-error} in
