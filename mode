@@ -52,21 +52,23 @@ function change_theme_to() {
 }
 
 function change_screen_to() {
+  local external_monitor
+  external_monitor=$(xrandr --listmonitors | tail -n +3 | awk '{print $4}')
   case $1 in
     work)
-      xrandr --output HDMI1 --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1600x900
+      xrandr --output "$external_monitor" --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1600x900
       ;;
     chill)
-      xrandr --output eDP1 --primary --mode 1920x1080 --auto --output HDMI1 --off
+      xrandr --output eDP1 --primary --mode 1920x1080 --auto --output "$external_monitor" --off
       ;;
     pitch)
-      xrandr --output HDMI1 --auto --above eDP1 --output eDP1 --primary --auto
+      xrandr --output "$external_monitor" --auto --above eDP1 --output eDP1 --primary --auto
       ;;
     focus)
-      xrandr --output HDMI1 --primary --auto --output eDP1 --off
+      xrandr --output "$external_monitor" --primary --auto --output eDP1 --off
       ;;
     demo)
-      xrandr --output HDMI1 --auto --same-as eDP1 --output eDP1 --primary --auto
+      xrandr --output "$external_monitor" --auto --same-as eDP1 --output eDP1 --primary --auto
       dunstctl set-paused true
       ;;
   esac
