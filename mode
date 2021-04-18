@@ -53,7 +53,7 @@ function change_theme_to() {
 
 function change_screen_to() {
   local external_monitor
-  external_monitor=$(xrandr --listmonitors | tail -n +3 | awk '{print $4}')
+  external_monitor=$(xrandr -q | grep " connected" | tail -n -1 | cut -d" " -f1)
   case $1 in
     work)
       xrandr --output "$external_monitor" --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1600x900
