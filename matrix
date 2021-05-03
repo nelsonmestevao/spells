@@ -52,7 +52,7 @@ fi
 
 keypress=''
 while [ "x$keypress" = "x" ]; do
-  echo $lines $cols $(($RANDOM % $cols)) $(($RANDOM % 2))
+  echo $lines $cols $((RANDOM % cols)) $((RANDOM % 2))
   sleep 0.04
   keypress="$(cat -v)"
 done | awk "$awkscript"

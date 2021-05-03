@@ -12,7 +12,7 @@ fi
 count=$1
 filenamebase=$2
 filenameextension=$3
-for ((filenumber = 1; filenumber <= $count; filenumber++)); do
+for ((filenumber = 1; filenumber <= count; filenumber++)); do
   echo "Some new random text: $RANDOM" >>$filenamebase$filenumber.$filenameextension
   git add $filenamebase$filenumber.$filenameextension
   git commit - "A random change of $RANDOM to $filenamebase$filenumber.$filenameextension"

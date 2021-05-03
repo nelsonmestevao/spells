@@ -2,7 +2,7 @@
 git version
 while true; do
   # Current branch
-  cur=`git symbolic-ref HEAD 2> /dev/null | cut -d/ -f3-`
+  cur=$(git symbolic-ref HEAD 2>/dev/null | cut -d/ -f3-)
 
   # Prompt
   if test -n "$cur"; then
@@ -22,13 +22,13 @@ while true; do
 
   # Built-in commands
   case $cmd in
-    ls) cmd=ls-files;;
-    "") continue;;
-    quit|exit) break;;
+    ls) cmd=ls-files ;;
+    "") continue ;;
+    quit | exit) break ;;
   esac
 
-  if [[ $cmd == !*  ]]; then
-    eval ${cmd:1} 
+  if [[ $cmd == !* ]]; then
+    eval ${cmd:1}
   elif [[ $cmd == git* ]]; then
     eval $cmd
   else

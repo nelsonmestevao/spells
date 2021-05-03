@@ -18,4 +18,3 @@ for uc in "${UCS[@]}"; do
   curl -X GET "https://dcmiei.lsd.di.uminho.pt/grupos/grupo/cria/$uc/$HUGO,$NELSON,$PEDRO,$RICARDO"
   echo ""
 done
-

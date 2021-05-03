@@ -1,4 +1,3 @@
 #!/usr/bin/env bash
 
 ps -eo pid,ppid,%mem,%cpu,comm | head "$@"
-
