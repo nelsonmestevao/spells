@@ -4,4 +4,3 @@
 
 # TODO: Receive more than one argument
 pandoc "$1" -tplain -o /dev/stdout
-

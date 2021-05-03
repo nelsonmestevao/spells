@@ -59,11 +59,11 @@ else
 fi
 
 # make directory for storing layouts
-mkdir -p $LAYOUT_PATH > /dev/null 2>&1
+mkdir -p $LAYOUT_PATH >/dev/null 2>&1
 
 # logs
 LOG_FILE=/tmp/i3_layout_manager.txt
-echo "" > "$LOG_FILE"
+echo "" >"$LOG_FILE"
 
 # #{ ASK FOR THE ACTION
 
@@ -80,15 +80,15 @@ DELETE LAYOUT" | rofi -i -dmenu -no-custom -p "Select action")
 
   # get me layout names based on existing file names in the LAYOUT_PATH
   LAYOUT_NAMES=$(ls -Rt $LAYOUT_PATH | grep "layout.*json" | sed -nr 's/layout-(.*)\.json/\1/p' | sed 's/\s/\n/g' | sed 's/_/ /g') # layout names
-  LAYOUT_NAME=$(echo "$LAYOUT_NAMES" | rofi -i -dmenu -p "Select layout (you may type new name when creating)" | sed 's/\s/_/g') # ask for selection
-  LAYOUT_NAME=${LAYOUT_NAME^^} # upper case
+  LAYOUT_NAME=$(echo "$LAYOUT_NAMES" | rofi -i -dmenu -p "Select layout (you may type new name when creating)" | sed 's/\s/_/g')   # ask for selection
+  LAYOUT_NAME=${LAYOUT_NAME^^}                                                                                                     # upper case
 
 # getting argument from command line
 else
 
   ACTION="LOAD LAYOUT"
   # if the layout name is a full path, just pass it, otherwise convert it to upper case
-  if [[ "${1}" == *".json" ]]; then
+  if [[ ${1} == *".json" ]]; then
     LAYOUT_NAME="${1}"
   else
     LAYOUT_NAME="${1^^}"
@@ -105,7 +105,7 @@ fi
 
 # if the layout name is a full path, use it, otherwise fabricate the full path
 if [[ $LAYOUT_NAME == *".json" ]]; then
-  LAYOUT_FILE=`realpath "$LAYOUT_NAME"`
+  LAYOUT_FILE=$(realpath "$LAYOUT_NAME")
 else
   LAYOUT_FILE=$LAYOUT_PATH/layout-"$LAYOUT_NAME".json
 fi
@@ -121,7 +121,7 @@ WORKSPACE_ID=$(i3-msg -t get_workspaces | jq '.[] | select(.focused==true).num' 
 
 # #{ LOAD
 
-if [[ "$ACTION" = "LOAD LAYOUT" ]]; then
+if [[ $ACTION == "LOAD LAYOUT" ]]; then
 
   # updating the workspace to the new layout is tricky
   # normally it does not influence existing windows
@@ -134,7 +134,7 @@ if [[ "$ACTION" = "LOAD LAYOUT" ]]; then
   # get the list of windows on the current workspace
   WINDOWS=$(xdotool search --all --onlyvisible --desktop $(xprop -notype -root _NET_CURRENT_DESKTOP | cut -c 24-) "" 2>/dev/null)
 
-  echo "About to unload all windows from the workspace" >> "$LOG_FILE"
+  echo "About to unload all windows from the workspace" >>"$LOG_FILE"
 
   for window in $WINDOWS; do
 
@@ -142,51 +142,51 @@ if [[ "$ACTION" = "LOAD LAYOUT" ]]; then
     # however, the line is not there when calling with rofi from i3
     HAS_PID=$(xdotool getwindowpid $window 2>&1 | grep -v command | wc -l)
 
-    echo "Unloading window '$window'" >> "$LOG_FILE"
+    echo "Unloading window '$window'" >>"$LOG_FILE"
 
     if [ $HAS_PID -eq 0 ]; then
-      echo "Window '$window' does not have a process" >> "$LOG_FILE"
+      echo "Window '$window' does not have a process" >>"$LOG_FILE"
     else
-      xdotool windowunmap "$window" >> "$LOG_FILE" 2>&1
-      echo "'xdotool windounmap $window' returned $?" >> "$LOG_FILE"
+      xdotool windowunmap "$window" >>"$LOG_FILE" 2>&1
+      echo "'xdotool windounmap $window' returned $?" >>"$LOG_FILE"
     fi
 
   done
 
-  echo "" >> "$LOG_FILE"
-  echo "About to delete all empty window placeholders" >> "$LOG_FILE"
+  echo "" >>"$LOG_FILE"
+  echo "About to delete all empty window placeholders" >>"$LOG_FILE"
 
   # delete all empty layout windows from the workspace
   # we just try to focus any window on the workspace (there should not be any, we unloaded them)
-  for (( i=0 ; $a-100 ; a=$a+1 )); do
+  for ((i = 0; a - 100; a = a + 1)); do
 
     # check window for STICKY before killing - if sticky do not kill
     xprop -id $(xdotool getwindowfocus) | grep -q '_NET_WM_STATE_STICK'
 
     if [ $? -eq 1 ]; then
 
-      echo "Killing an unsued placeholder" >> "$LOG_FILE"
-      i3-msg "focus parent, kill" >> "$LOG_FILE" 2>&1
+      echo "Killing an unsued placeholder" >>"$LOG_FILE"
+      i3-msg "focus parent, kill" >>"$LOG_FILE" 2>&1
 
       i3_msg_ret="$?"
 
       if [ "$i3_msg_ret" == 0 ]; then
-        echo "Empty placeholder successfully killed" >> "$LOG_FILE"
+        echo "Empty placeholder successfully killed" >>"$LOG_FILE"
       else
-        echo "Empty placeholder could not be killed, breaking" >> "$LOG_FILE"
+        echo "Empty placeholder could not be killed, breaking" >>"$LOG_FILE"
         break
       fi
     fi
   done
 
-  echo "" >> "$LOG_FILE"
-  echo "Applying the layout" >> "$LOG_FILE"
+  echo "" >>"$LOG_FILE"
+  echo "Applying the layout" >>"$LOG_FILE"
 
   # then we can apply to chosen layout
-  i3-msg "append_layout $LAYOUT_FILE" >> "$LOG_FILE" 2>&1
+  i3-msg "append_layout $LAYOUT_FILE" >>"$LOG_FILE" 2>&1
 
-  echo "" >> "$LOG_FILE"
-  echo "About to bring all windows back" >> "$LOG_FILE"
+  echo "" >>"$LOG_FILE"
+  echo "About to bring all windows back" >>"$LOG_FILE"
 
   # and then we can reintroduce the windows back to the workspace
   for window in $WINDOWS; do
@@ -195,13 +195,13 @@ if [[ "$ACTION" = "LOAD LAYOUT" ]]; then
     # however, the line is not there when calling with rofi from i3
     HAS_PID=$(xdotool getwindowpid $window 2>&1 | grep -v command | wc -l)
 
-    echo "Loading back window '$window'" >> "$LOG_FILE"
+    echo "Loading back window '$window'" >>"$LOG_FILE"
 
     if [ $HAS_PID -eq 0 ]; then
-      echo "$window does not have a process" >> "$LOG_FILE"
+      echo "$window does not have a process" >>"$LOG_FILE"
     else
       xdotool windowmap "$window"
-      echo "'xdotool windowmap $window' returned $?" >> "$LOG_FILE"
+      echo "'xdotool windowmap $window' returned $?" >>"$LOG_FILE"
     fi
   done
 
@@ -211,18 +211,17 @@ fi
 
 # #{ SAVE
 
-if [[ "$ACTION" = "SAVE LAYOUT" ]]; then
+if [[ $ACTION == "SAVE LAYOUT" ]]; then
 
   ACTION=$(echo "DEFAULT (INSTANCE)
 SPECIFIC (CHOOSE)
 MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
 
-
-  if [[ "$ACTION" = "DEFAULT (INSTANCE)" ]]; then
+  if [[ $ACTION == "DEFAULT (INSTANCE)" ]]; then
     CRITERION="default"
-  elif [[ "$ACTION" = "SPECIFIC (CHOOSE)" ]]; then
+  elif [[ $ACTION == "SPECIFIC (CHOOSE)" ]]; then
     CRITERION="specific"
-  elif [[ "$ACTION" = "MATCH ANY" ]]; then
+  elif [[ $ACTION == "MATCH ANY" ]]; then
     CRITERION="any"
   fi
 
@@ -231,10 +230,10 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
   CURRENT_MONITOR=$(i3-msg -t get_workspaces | jq '.[] | select(.focused==true).output' | cut -d"\"" -f2)
 
   # get the i3-tree for all workspaces for the current monitor
-  i3-save-tree --output "$CURRENT_MONITOR" > "$ALL_WS_FILE" 2>&1
+  i3-save-tree --output "$CURRENT_MONITOR" >"$ALL_WS_FILE" 2>&1
 
   # get the i3-tree for the current workspace
-  i3-save-tree --workspace "$WORKSPACE_ID" > "$LAYOUT_FILE" 2>&1
+  i3-save-tree --workspace "$WORKSPACE_ID" >"$LAYOUT_FILE" 2>&1
 
   # for debug
   # cp $LAYOUT_FILE $LAYOUT_PATH/ws_temp.txt
@@ -298,14 +297,14 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
   # tools, so custom bash it is...
 
   MATCH=0
-  PATTERN_LINES=`cat $LAYOUT_FILE | wc -l` # get me the number of lines in the small file
-  SOURCE_LINES=`cat $ALL_WS_FILE | wc -l` # get me the number of lines in the big file
+  PATTERN_LINES=$(cat $LAYOUT_FILE | wc -l) # get me the number of lines in the small file
+  SOURCE_LINES=$(cat $ALL_WS_FILE | wc -l)  # get me the number of lines in the big file
 
   N_ITER=$(expr $SOURCE_LINES - $PATTERN_LINES)
-  readarray pattern < $LAYOUT_FILE
+  readarray pattern <$LAYOUT_FILE
 
   MATCH_LINE=0
-  for (( a=1 ; $a-$N_ITER ; a=$a+1 )); do
+  for ((a = 1; a - N_ITER; a = a + 1)); do
 
     CURR_LINE=0
     MATCHED_LINES=0
@@ -313,17 +312,16 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
 
       PATTERN_LINE=$(echo ${pattern[$CURR_LINE]} | tr -d '\n')
 
-      if [[ "$line1" == "$PATTERN_LINE" ]]; then
+      if [[ $line1 == "$PATTERN_LINE" ]]; then
         MATCHED_LINES=$(expr $MATCHED_LINES + 1)
       else
         break
       fi
 
       CURR_LINE=$(expr $CURR_LINE + 1)
-    done <<< $(cat "$ALL_WS_FILE" | tail -n +"$a")
+    done <<<$(cat "$ALL_WS_FILE" | tail -n +"$a")
 
-    if [[ "$MATCHED_LINES" == "$PATTERN_LINES" ]];
-    then
+    if [[ $MATCHED_LINES == "$PATTERN_LINES" ]]; then
       MATCH_LINE="$a"
       break
     fi
@@ -346,7 +344,7 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
   # extract the needed part of the file and add it to the workspace file
   # this part is mostly according to the i3 manual, except we actually put there
   # the information about the split type
-  cat $ALL_WS_FILE | cat - $LAYOUT_FILE > /tmp/tmp.txt && mv /tmp/tmp.txt $LAYOUT_FILE
+  cat $ALL_WS_FILE | cat - $LAYOUT_FILE >/tmp/tmp.txt && mv /tmp/tmp.txt $LAYOUT_FILE
   # add closing bracked at the end
   $VIM_BIN $HEADLESS -nEs -c 'normal Go]}' -c "wqa" -- "$LAYOUT_FILE"
 
@@ -354,11 +352,11 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
   # https://i3wm.org/docs/layout-saving.html
 
   # uncomment the instance swallow rule
-  if [[ "$CRITERION" = "default" ]]; then
+  if [[ $CRITERION == "default" ]]; then
     $VIM_BIN $HEADLESS -nEs -c "%g/instance/norm ^dW" -c "wqa" -- "$LAYOUT_FILE"
-  elif [[ "$CRITERION" = "any" ]]; then
+  elif [[ $CRITERION == "any" ]]; then
     $VIM_BIN $HEADLESS -nEs -c '%g/instance/norm ^dW3f"di"' -c "wqa" -- "$LAYOUT_FILE"
-  elif [[ "$CRITERION" = "specific" ]]; then
+  elif [[ $CRITERION == "specific" ]]; then
 
     LAST_LINE=1
 
@@ -372,7 +370,7 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
         LINE_NUM=$(echo $LINE_NUM | awk '{print $1}')
         LINE_NUM=${LINE_NUM%:}
         LINE_NUM=$(expr $LINE_NUM - 1)
-        LINE_NUM=$(expr $LINE_NUM + $LAST_LINE )
+        LINE_NUM=$(expr $LINE_NUM + $LAST_LINE)
 
         NAME=$(cat $LAYOUT_FILE | sed -n "$(expr ${LINE_NUM} - 4)p" | awk '{$1="";print $0}')
 
@@ -385,7 +383,7 @@ MATCH ANY" | rofi -i -dmenu -p "How to identify windows? (xprop style)")
 
         $VIM_BIN $HEADLESS -nEs -c "norm ${SELECTED_OPTION}gg^dW" -c "wqa" -- "$LAYOUT_FILE"
 
-        LAST_LINE=$( expr $SELECTED_OPTION)
+        LAST_LINE=$(expr $SELECTED_OPTION)
 
       else
         break
@@ -437,7 +435,7 @@ fi
 
 # #{ DELETE
 
-if [[ "$ACTION" = "DELETE LAYOUT" ]]; then
+if [[ $ACTION == "DELETE LAYOUT" ]]; then
   rm "$LAYOUT_FILE"
   notify-send -u low -t 2000 "Layout deleted" -h string:x-canonical-private-synchronous:anything
   exec "$0" "$@"
