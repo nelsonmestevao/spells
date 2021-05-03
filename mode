@@ -59,6 +59,7 @@ function change_screen_to() {
       xrandr --output "$external_monitor" --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1600x900
       ;;
     chill)
+      external_monitor=$(xrandr -q | grep " unknown connection" | tail -n -1 | cut -d" " -f1)
       xrandr --output eDP1 --primary --mode 1920x1080 --auto --output "$external_monitor" --off
       ;;
     pitch)
