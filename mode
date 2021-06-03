@@ -75,6 +75,7 @@ function change_screen_to() {
   esac
 
   i3-msg restart
+  setxkbmap -option ctrl:nocaps
   echo "Changed to mode $1!"
 }
 
