@@ -22,7 +22,8 @@ function display_help() {
     default
 
   $(help_section Screens)
-    work            2 screens side-by-side
+    work            2 screens stacked
+    home            2 screens side-by-side
     pitch           2 screens 2nd on top
     chill           1 screen (eDP1)
     focus           1 screen (HDMI1)
@@ -56,7 +57,10 @@ function change_screen_to() {
   external_monitor=$(xrandr -q | grep " connected" | tail -n -1 | cut -d" " -f1)
   case $1 in
     work)
-      xrandr --output "$external_monitor" --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1600x900
+      xrandr --output "$external_monitor" --primary --auto --above eDP1 --output eDP1 --auto --mode 1920x1080
+      ;;
+    home)
+      xrandr --output "$external_monitor" --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1920x1080
       ;;
     chill)
       external_monitor=$(xrandr -q | grep " unknown connection" | tail -n -1 | cut -d" " -f1)
@@ -89,7 +93,7 @@ case ${1:-error} in
   dark | light | default)
     change_theme_to "$1"
     ;;
-  work | chill | pitch | focus | demo)
+  work | home | chill | pitch | focus | demo)
     change_screen_to "$1"
     ;;
   *)
