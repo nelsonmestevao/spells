@@ -54,26 +54,27 @@ function change_theme_to() {
 
 function change_screen_to() {
   local external_monitor
+  local laptop_monitor="eDP1"
   external_monitor=$(xrandr -q | grep " connected" | tail -n -1 | cut -d" " -f1)
   case $1 in
     work)
-      xrandr --output "$external_monitor" --primary --auto --above eDP1 --output eDP1 --auto --mode 1920x1080
+      xrandr --output "$external_monitor" --primary --auto --above "$laptop_monitor" --output "$laptop_monitor" --auto --mode 1920x1080
       ;;
     home)
-      xrandr --output "$external_monitor" --primary --auto --right-of eDP1 --output eDP1 --auto --mode 1920x1080
+      xrandr --output "$external_monitor" --primary --auto --right-of "$laptop_monitor" --output "$laptop_monitor" --auto --mode 1920x1080
       ;;
     chill)
       external_monitor=$(xrandr -q | grep " unknown connection" | tail -n -1 | cut -d" " -f1)
-      xrandr --output eDP1 --primary --mode 1920x1080 --auto --output "$external_monitor" --off
+      xrandr --output "$laptop_monitor" --primary --mode 1920x1080 --auto --output "$external_monitor" --off
       ;;
     pitch)
-      xrandr --output "$external_monitor" --auto --above eDP1 --output eDP1 --primary --auto
+      xrandr --output "$external_monitor" --auto --above "$laptop_monitor" --output "$laptop_monitor" --primary --auto
       ;;
     focus)
-      xrandr --output "$external_monitor" --primary --auto --output eDP1 --off
+      xrandr --output "$external_monitor" --primary --auto --output "$laptop_monitor" --off
       ;;
     demo)
-      xrandr --output "$external_monitor" --auto --same-as eDP1 --output eDP1 --primary --auto
+      xrandr --output "$external_monitor" --auto --same-as "$laptop_monitor" --output "$laptop_monitor" --primary --auto
       dunstctl set-paused true
       ;;
   esac
