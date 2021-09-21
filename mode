@@ -54,14 +54,14 @@ function change_theme_to() {
 
 function change_screen_to() {
   local external_monitor
-  local laptop_monitor="eDP1"
+  local laptop_monitor="eDP-1"
   external_monitor=$(xrandr -q | grep " connected" | tail -n -1 | cut -d" " -f1)
   case $1 in
     work)
-      xrandr --output "$external_monitor" --primary --auto --above "$laptop_monitor" --output "$laptop_monitor" --auto --mode 1920x1080
+      xrandr --output "$external_monitor" --primary --auto --above "$laptop_monitor"
       ;;
     home)
-      xrandr --output "$external_monitor" --primary --auto --right-of "$laptop_monitor" --output "$laptop_monitor" --auto --mode 1920x1080
+      xrandr --output "$external_monitor" --primary --auto --right-of "$laptop_monitor"
       ;;
     chill)
       external_monitor=$(xrandr -q | grep " unknown connection" | tail -n -1 | cut -d" " -f1)
