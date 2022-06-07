@@ -1,23 +1,17 @@
 #!/bin/sh
 
-# git-whoami
+# git-whoami is an additional Git command that tells you what author and
+# committer information would (probably) be used for a commit. This is
+# particularly helpful if you operate many different Git repositories with
+# different identities (work, private, different projects). Inspired by bzr
+# whoami.
+
+# To be able to use it, just put it in your path somewhere. You can then call
+# it as "git whoami" or directly as "git-whoami".
+
 # Author: Peter Eisentraut <peter@eisentraut.org>
 # Created: 2011-10-27
 # License: WTFPL; see http://sam.zoy.org/wtfpl/
-
-if [[ "${1:-NOFORCE}" != "--help" ]]; then
-  echo """
-    git-whoami is an additional Git command that tells you what author and
-    committer information would (probably) be used for a commit. This is
-    particularly helpful if you operate many different Git repositories with
-    different identities (work, private, different projects). Inspired by bzr
-    whoami.
-
-    To be able to use it, just put it in your path somewhere. You can then call
-    it as "git whoami" or directly as "git-whoami".
-    """
-  exit 0
-fi
 
 set -e
 
