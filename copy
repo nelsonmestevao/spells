@@ -5,14 +5,20 @@ copy_file() {
   FILE=$1
   EXTENSION=${FILE#*.}
 
-  if file $FILE | grep -qE 'image' &>/dev/null; then
+  if
+    file $FILE | grep -qE 'image' &
+    >/dev/null
+  then
     xclip -selection clipboard -t image/"$EXTENSION" -i "$FILE"
   else
     xclip -selection clipboard -i "$@"
   fi
 }
 
-if command -v xclip &>/dev/null; then
+if
+  command -v xclip &
+  >/dev/null
+then
   if [ -f "$1" ]; then
     copy_file "$1"
   else
