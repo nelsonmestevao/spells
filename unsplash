@@ -3,5 +3,6 @@
 # curl -sSL https://source.unsplash.com/collection/999749/1600x900 -o "$(mktemp)" && feh --bg-fill "$_" &
 
 # https://unsplash.com/collections/93529030 - dark collection
+curl -sSL "https://source.unsplash.com/collection/93529030/1600x900" -o "$(mktemp)" && feh --bg-fill "$_" &
 
-curl -sSL "https://source.unsplash.com/$(basename "$1")/1600x900" -o "$(mktemp)" && feh --bg-fill "$_" &
+# curl -sSL "https://source.unsplash.com/$(basename "$1")/1600x900" -o "$(mktemp)" && feh --bg-fill "$_" &
