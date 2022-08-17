@@ -8,14 +8,14 @@ xidlehook \
   `# Don't lock when there's a fullscreen application` \
   --not-when-fullscreen \
   `# Dim the screen after 5 minutes, undim if user becomes active` \
-  --timer 300 \
-    'redshift -P -b 0.5' \
-    'redshift -P -b 1' \
-  `# Undim & lock after 5 more minutes` \
-  --timer 300 \
-    '~/.spells/i3wm/manager.sh lock' \
+  # --timer 10 \
+  #   'redshift -g 0.5' \
+  #   'redshift -g 1' \
+  `# Undim & lock after 10 minutes` \
+  --timer 600 \
+    "~/.spells/i3wm/manager.sh lock" \
     '' \
   `# Finally, suspend an hour after it locks` \
   --timer 3600 \
-    '~/.spells/i3wm/manager.sh suspend' \
+    "~/.spells/i3wm/manager.sh suspend" \
     ''
