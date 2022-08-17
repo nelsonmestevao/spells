@@ -16,3 +16,5 @@ i3-msg "workspace $ws3; exec /usr/bin/firefox-developer-edition"
 i3-msg "workspace $ws4; exec /usr/bin/thunderbird"
 i3-msg "workspace $ws10; exec /usr/bin/spotify"
 i3-msg "workspace $ws2; exec /usr/bin/alacrity"
+
+betterlockscreen -u ~/Pictures/lockscreen.jpg
