@@ -1,0 +1,26 @@
+#!/usr/bin/env sh
+
+autorandr home
+
+ws1="1:  Slack"
+ws2="2:  Terminal"
+ws3="3:  Browser"
+ws4="4:  General"
+ws5="5:  Terminal"
+ws6="6:  IntelliJ"
+ws7="7:  Playground"
+ws8="8:  Code"
+ws9="9:  Chat"
+ws10="10:  Spotify"
+
+computer_monitor="eDP-1"
+external_monitor="HDMI-1"
+
+i3-msg "workspace \"$ws1\"; move workspace to output $external_monitor; exec /usr/bin/slack"
+i3-msg "workspace \"$ws3\"; move workspace to output $external_monitor; exec /usr/bin/firefox-developer-edition"
+i3-msg "workspace \"$ws4\"; move workspace to output $external_monitor; exec /usr/bin/thunderbird"
+i3-msg "workspace \"$ws10\"; move workspace to output $computer_monitor; exec /usr/bin/spotify"
+i3-msg "workspace \"$ws2\"; move workspace to output $external_monitor; exec /usr/bin/alacrity"
+
+betterlockscreen -u ~/Pictures/lockscreen.jpg &>/dev/null & disown
+nitrogen --restore &>/dev/null & disown
