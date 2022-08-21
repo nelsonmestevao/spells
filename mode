@@ -47,6 +47,12 @@ function change_theme_to() {
   echo "Theme changed to $theme!"
 }
 
+function get_theme() {
+  declare -r config_file="$DOTFILES/alacritty/alacritty.yml"
+
+  grep 'colors: *' $config_file | awk -F '*' '{ print $2 }'
+}
+
 function change_screen_to() {
   case $1 in
     work)
@@ -77,6 +83,9 @@ case ${1:-error} in
     ;;
   -v | --version)
     display_version "$PROGRAM" "$VERSION"
+    ;;
+  -t | --theme)
+    get_theme
     ;;
   dark | light | default)
     change_theme_to "$1"
