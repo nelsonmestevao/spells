@@ -19,7 +19,6 @@ function display_help() {
   $(help_section Themes)
     dark
     light
-    default
 
   $(help_section Screens)
     work            2 screens stacked
@@ -39,10 +38,20 @@ EOF
 }
 
 function change_theme_to() {
-  declare -r config_file="$DOTFILES/alacritty/alacritty.yml"
+  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
+  declare -r git_config="$DOTFILES/git/gitconfig"
   declare -r theme="$1"
 
-  sed -i "s/colors:.*/colors: *${theme}/g" "${config_file}"
+  sed -i "s/colors:.*/colors: *${theme}/g" "${alacritty_config}"
+
+  case $theme in
+    dark)
+      sed -i "s/light =.*/light = false/g" "${git_config}"
+      ;;
+    light)
+      sed -i "s/light =.*/light = true/g" "${git_config}"
+      ;;
+  esac
 
   echo "Theme changed to $theme!"
 }
@@ -61,12 +70,12 @@ function change_screen_to() {
     home)
       autorandr home
       ;;
-    chill)
-      ;;
-    pitch)
-      ;;
-    focus)
-      ;;
+    chill) ;;
+
+    pitch) ;;
+
+    focus) ;;
+
     demo)
       dunstctl set-paused true
       ;;
@@ -87,7 +96,7 @@ case ${1:-error} in
   -t | --theme)
     get_theme
     ;;
-  dark | light | default)
+  dark | light)
     change_theme_to "$1"
     ;;
   work | home | chill | pitch | focus | demo)
