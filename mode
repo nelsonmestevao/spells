@@ -37,6 +37,16 @@ function display_help() {
 EOF
 }
 
+function toggle_keyboard_backlight() {
+  declare -r brightness=$(cat /sys/class/leds/tpacpi::kbd_backlight/brightness)
+
+  if [[ $brightness -eq 0 ]]; then
+    echo 1 >/sys/class/leds/tpacpi::kbd_backlight/brightness
+  else
+    echo 0 >/sys/class/leds/tpacpi::kbd_backlight/brightness
+  fi
+}
+
 function change_theme_to() {
   declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
   declare -r git_config="$DOTFILES/git/gitconfig"
@@ -95,6 +105,9 @@ case ${1:-error} in
     ;;
   -t | --theme)
     get_theme
+    ;;
+  -k | --keyboard)
+    toggle_keyboard_backlight
     ;;
   dark | light)
     change_theme_to "$1"
