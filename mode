@@ -37,6 +37,12 @@ function display_help() {
 EOF
 }
 
+function i3restart() {
+  i3-msg restart >/dev/null
+  setxkbmap -option ctrl:nocaps
+  nitrogen --restore &>/dev/null
+}
+
 function toggle_keyboard_backlight() {
   declare -r brightness=$(cat /sys/class/leds/tpacpi::kbd_backlight/brightness)
 
@@ -62,6 +68,8 @@ function change_theme_to() {
       sed -i "s/light =.*/light = true/g" "${git_config}"
       ;;
   esac
+
+  i3restart
 
   echo "Theme changed to $theme!"
 }
@@ -91,8 +99,7 @@ function change_screen_to() {
       ;;
   esac
 
-  i3-msg restart
-  setxkbmap -option ctrl:nocaps
+  i3restart
   echo "Changed to mode $1!"
 }
 
