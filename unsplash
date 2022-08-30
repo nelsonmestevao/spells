@@ -4,6 +4,66 @@
 #GBg3jyGS-Ug - great lockscreen
 
 # https://unsplash.com/collections/93529030 - dark collection
-curl -sSL "https://source.unsplash.com/collection/93529030/1600x900" -o "$(mktemp)" && feh --bg-fill "$_" &
+# curl -sSL "https://source.unsplash.com/collection/93529030/1600x900" -o "$(mktemp)" && feh --bg-fill "$_" &
+# curl -sSL "https://source.unsplash.com/user/nasa/1920x1200" -o "$(mktemp)"
+
+# betterlockscreen -u "$_"
 
 # curl -sSL "https://source.unsplash.com/$(basename "$1")/1600x900" -o "$(mktemp)" && feh --bg-fill "$_" &
+
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
+cd "${BASE_DIR}/.." || exit 127
+
+# shellcheck source=./helpers.sh
+. helpers.sh
+
+PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
+VERSION=0.4.0
+
+function display_help() {
+  cat <<EOF
+  $(help_section Usage)
+    ${PROGRAM} [options] desktop
+    ${PROGRAM} [options] lockscreen
+
+  $(help_section Options)
+    -h, --help      Show this screen.
+    -v, --version   Show version.
+EOF
+}
+
+function unsplash_download {
+  declare -A sources=(
+    [nasa]="https://source.unsplash.com/user/nasa/1920x1200"
+    [bestofnasa]="https://source.unsplash.com/collection/235/1920x1200"
+    [desktopdark]="https://source.unsplash.com/collection/93529030/1920x1200"
+    [wallpapers]="https://source.unsplash.com/collection/999749/1920x1200"
+  )
+
+  curl -sSL ${sources[$1]} -o "$(mktemp)"
+
+  betterlockscreen -u "$_"
+}
+
+case ${1:-lockscreen} in
+  -h | --help)
+    display_help
+    ;;
+  -v | --version)
+    display_version "$PROGRAM" "$VERSION"
+    ;;
+  lockscreen)
+    unsplash_download wallpapers
+    ;;
+
+  desktop) ;;
+
+  *)
+    display_help >&2
+    exit 1
+    ;;
+esac
