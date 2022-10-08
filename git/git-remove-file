@@ -1,0 +1,4 @@
+#!/bin/sh
+
+git filter-branch --index-filter \
+  "git rm -rf --cached --ignore-unmatch $@" HEAD
