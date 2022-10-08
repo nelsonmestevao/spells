@@ -39,8 +39,9 @@ EOF
 
 function i3restart() {
   i3-msg restart >/dev/null
+  numlockx on
+  setcapslock off
   setxkbmap -option ctrl:nocaps
-  nitrogen --restore &>/dev/null
 }
 
 function toggle_keyboard_backlight() {
@@ -99,6 +100,8 @@ function change_screen_to() {
       ;;
   esac
 
+  nitrogen --restore 2> /dev/null
+  betterlockscreen -u ~/Pictures/lockscreen.jpg > /dev/null &
   i3restart
   echo "Changed to mode $1!"
 }
