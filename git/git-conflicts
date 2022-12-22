@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Usage: git conflicts
+# Show list of files in a conflict state.
+
+set -euo pipefail
+
+git ls-files --unmerged | awk '{print $4}' | sort --unique
