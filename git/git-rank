@@ -1,0 +1,3 @@
+#!/bin/sh
+
+git shortlog -n -s --no-merges | \nl | grep --color -z "Nelson Estevão"
