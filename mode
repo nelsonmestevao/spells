@@ -57,15 +57,18 @@ function toggle_keyboard_backlight() {
 function change_theme_to() {
   declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
   declare -r git_config="$DOTFILES/git/gitconfig"
+  declare -r code_settings="$HOME/.config/Code - OSS/User/settings.json"
   declare -r theme="$1"
 
   sed -i "s/colors:.*/colors: *${theme}/g" "${alacritty_config}"
 
   case $theme in
     dark)
+      sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Dark"/g' "${code_settings}"
       sed -i "s/light =.*/light = false/g" "${git_config}"
       ;;
     light)
+      sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Light"/g' "${code_settings}"
       sed -i "s/light =.*/light = true/g" "${git_config}"
       ;;
   esac
@@ -100,8 +103,8 @@ function change_screen_to() {
       ;;
   esac
 
-  nitrogen --restore 2> /dev/null
-  betterlockscreen -u ~/Pictures/lockscreen.jpg > /dev/null &
+  nitrogen --restore 2>/dev/null
+  betterlockscreen -u ~/Pictures/lockscreen.jpg >/dev/null &
   i3restart
   echo "Changed to mode $1!"
 }
