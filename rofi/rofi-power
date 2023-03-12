@@ -12,7 +12,6 @@ if [ -f $HOME/.config/rofi-power/config ]; then
 else
   LAUNCHER="rofi -dmenu -i -p rofi-power"
   USE_LOCKER="true"
-  LOCKER="betterlockscreen"
 fi
 
 # Show exit wm option if exit command is provided as an argument
@@ -33,14 +32,14 @@ if [ ${#option} -gt 0 ]; then
       i3exit shutdown
       ;;
     Lock)
-      "$LOCKER" -l dim
+      dm-tool lock
       ;;
     Suspend)
-      $($USE_LOCKER) && "$LOCKER"
+      $($USE_LOCKER) && dm-tool lock
       i3exit suspend
       ;;
     Hibernate)
-      $($USE_LOCKER) && "$LOCKER"
+      $($USE_LOCKER) && dm-tool lock
       i3exit hibernate
       ;;
     *) ;;

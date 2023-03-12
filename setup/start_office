@@ -22,5 +22,4 @@ i3-msg "workspace \"$ws4\"; move workspace to output $external_monitor; exec /us
 i3-msg "workspace \"$ws10\"; move workspace to output $computer_monitor; exec /usr/bin/spotify"
 i3-msg "workspace \"$ws2\"; move workspace to output $external_monitor; exec /usr/bin/alacrity"
 
-betterlockscreen -u ~/Pictures/lockscreen.jpg &>/dev/null & disown
 nitrogen --restore &>/dev/null & disown
