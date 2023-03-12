@@ -104,7 +104,6 @@ function change_screen_to() {
   esac
 
   nitrogen --restore 2>/dev/null
-  betterlockscreen -u ~/Pictures/lockscreen.jpg >/dev/null &
   i3restart
   echo "Changed to mode $1!"
 }
