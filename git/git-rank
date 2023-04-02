@@ -1,3 +1,14 @@
 #!/bin/sh
 
-git shortlog -n -s --no-merges | \nl | grep --color -z "Nelson Estevão"
+case ${1:---by-commit} in
+  --by-line | --by-lines)
+    git ls-files -z |
+      xargs -0n1 git blame -w |
+      perl -n -e '/^.*?\((.*?)\s+[\d]{4}/; print $1,"\n"' |
+      sort -f | uniq -c | sort -n |
+      tac | \nl | grep --color -z "Nelson Estevão"
+    ;;
+  --by-commit | --by-commits)
+    git shortlog -n -s --no-merges | \nl | grep --color -z "Nelson Estevão"
+    ;;
+esac
