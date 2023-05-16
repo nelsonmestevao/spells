@@ -21,7 +21,8 @@ function display_help() {
     light
 
   $(help_section Screens)
-    work            2 screens stacked
+    // work            2 screens stacked (eDP1 on bottom)
+    work            2 screens side-by-side (eDP1 on right)
     home            2 screens side-by-side
     pitch           2 screens 2nd on top
     chill           1 screen (eDP1)
@@ -87,7 +88,7 @@ function get_theme() {
 function change_screen_to() {
   case $1 in
     work)
-      autorandr kelvin
+      autorandr granjinhos
       ;;
     home)
       autorandr home
