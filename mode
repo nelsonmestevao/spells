@@ -58,7 +58,7 @@ function toggle_keyboard_backlight() {
 function change_theme_to() {
   declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
   declare -r git_config="$DOTFILES/git/gitconfig"
-  declare -r code_settings="$HOME/.config/Code - OSS/User/settings.json"
+  declare -r code_settings="$HOME/.config/Code/User/settings.json"
   declare -r theme="$1"
 
   sed -i "s/colors:.*/colors: *${theme}/g" "${alacritty_config}"
