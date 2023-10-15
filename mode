@@ -27,7 +27,7 @@ function display_help() {
     pitch           2 screens 2nd on top
     chill           1 screen (eDP1)
     focus           1 screen (HDMI1)
-    demo            2 screens mirror and notifications off
+    demo            ~2 screens mirror~, notifications off and increase font-size
 
   $(help_section Options)
     -h, --help      Show this screen.
@@ -55,23 +55,48 @@ function toggle_keyboard_backlight() {
   fi
 }
 
+function set_notifications() {
+  return
+  declare -r status="$1"
+
+  case $status in
+    on)
+      dunstctl set-paused false
+      ;;
+    off)
+      dunstctl set-paused true
+      ;;
+  esac
+}
+
+function set_editor_font_size() {
+  declare -r code_settings="$DOTFILES/vscode/settings.json"
+  declare -r size="$1"
+
+  sed -i -e "s/\"editor.fontSize\": .*/\"editor.fontSize\": ${size},/g" "${code_settings}"
+}
+
+function set_terminal_font_size() {
+  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
+  declare -r size="$1"
+
+  sed -i "s/size:.*/size: ${size}/g" "${alacritty_config}"
+}
+
 function change_theme_to() {
   declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
   declare -r git_config="$DOTFILES/git/gitconfig"
-  declare -r code_settings="$HOME/.config/Code/User/settings.json"
-  declare -r code_oss_settings="$HOME/.config/Code - OSS/User/settings.json"
+  declare -r code_settings="$DOTFILES/vscode/settings.json"
   declare -r theme="$1"
 
   sed -i "s/colors:.*/colors: *${theme}/g" "${alacritty_config}"
 
   case $theme in
     dark)
-      sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Dark"/g' "${code_oss_settings}"
       sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Dark"/g' "${code_settings}"
       sed -i "s/light =.*/light = false/g" "${git_config}"
       ;;
     light)
-      sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Light"/g' "${code_oss_settings}"
       sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Light"/g' "${code_settings}"
       sed -i "s/light =.*/light = true/g" "${git_config}"
       ;;
@@ -96,14 +121,22 @@ function change_screen_to() {
     home)
       autorandr home
       ;;
-    chill) ;;
+    chill)
+      change_theme_to dark
+      set_notifications on
+      set_editor_font_size 16
+      set_terminal_font_size 14.0
+      ;;
 
     pitch) ;;
 
     focus) ;;
 
     demo)
-      dunstctl set-paused true
+      change_theme_to light
+      set_notifications off
+      set_editor_font_size 20
+      set_terminal_font_size 18.0
       ;;
   esac
 
