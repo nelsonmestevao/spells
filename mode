@@ -84,12 +84,12 @@ function set_terminal_font_size() {
 }
 
 function change_theme_to() {
-  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
+  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
   declare -r git_config="$DOTFILES/git/gitconfig"
   declare -r code_settings="$DOTFILES/vscode/settings.json"
   declare -r theme="$1"
 
-  sed -i "s/colors:.*/colors: *${theme}/g" "${alacritty_config}"
+  sed -i "s|^import = \[.*\]|import = [\"~/.dotfiles/alacritty/themes/google.${theme}.toml\"]|" "${alacritty_config}"
 
   case $theme in
     dark)
