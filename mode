@@ -77,10 +77,10 @@ function set_editor_font_size() {
 }
 
 function set_terminal_font_size() {
-  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.yml"
+  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
   declare -r size="$1"
 
-  sed -i "s/size:.*/size: ${size}/g" "${alacritty_config}"
+  sed -i "s/size =.*/size = ${size}/g" "${alacritty_config}"
 }
 
 function change_theme_to() {
@@ -108,9 +108,9 @@ function change_theme_to() {
 }
 
 function get_theme() {
-  declare -r config_file="$DOTFILES/alacritty/alacritty.yml"
+  declare -r config_file="$DOTFILES/alacritty/alacritty.toml"
 
-  grep 'colors: *' $config_file | awk -F '*' '{ print $2 }'
+  grep 'import = *' $config_file | awk -F '.' '{ print $3 }'
 }
 
 function change_screen_to() {
