@@ -124,8 +124,8 @@ function change_screen_to() {
     chill)
       change_theme_to dark
       set_notifications on
-      set_editor_font_size 16
-      set_terminal_font_size 14.0
+      set_editor_font_size 18
+      set_terminal_font_size 16.0
       ;;
 
     pitch) ;;
@@ -135,8 +135,8 @@ function change_screen_to() {
     demo)
       change_theme_to light
       set_notifications off
-      set_editor_font_size 20
-      set_terminal_font_size 18.0
+      set_editor_font_size 22
+      set_terminal_font_size 20.0
       ;;
   esac
 
