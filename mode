@@ -135,8 +135,8 @@ function change_screen_to() {
     demo)
       change_theme_to light
       set_notifications off
-      set_editor_font_size 22
-      set_terminal_font_size 20.0
+      set_editor_font_size 28
+      set_terminal_font_size 26.0
       ;;
   esac
 
