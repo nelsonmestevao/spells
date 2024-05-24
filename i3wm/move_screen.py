@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import i3
 
+# yay python-i3-py
 # pip install i3-py
 
 
