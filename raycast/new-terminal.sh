@@ -2,16 +2,14 @@
 
 # Required parameters:
 # @raycast.schemaVersion 1
-# @raycast.title New Terminal
-# @raycast.mode compact
+# @raycast.title New Terminal Window
+# @raycast.mode silent
 
 # Optional parameters:
 # @raycast.icon 🖥️
 
 # Documentation:
 # @raycast.description Opens a new Alacritty Window
-
-echo "Opening Alacritty..."
 
 open -n "/Applications/Alacritty.app/"
 
