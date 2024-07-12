@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
+cd "${BASE_DIR}/.." || exit 127
+
+# shellcheck source=./helpers.sh
+. helpers.sh
+
+PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
+VERSION=0.4.0
+
+function display_help() {
+  cat <<EOF
+  $(help_section Usage)
+    ${PROGRAM} [options] LAYOUT_NAME
+
+  $(help_section Options)
+    -h, --help      Show this screen.
+    -v, --version   Show version.
+EOF
+}
+
+case ${1:---help} in
+  -h | --help)
+    display_help
+    ;;
+  -v | --version)
+    display_version "$PROGRAM" "$VERSION"
+    ;;
+  *)
+    autorandr --save $1 --force
+    ;;
+esac
