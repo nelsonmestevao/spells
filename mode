@@ -56,7 +56,6 @@ function toggle_keyboard_backlight() {
 }
 
 function set_notifications() {
-  return
   declare -r status="$1"
 
   case $status in
