@@ -9,7 +9,6 @@
 # @raycast.icon 🖥️
 
 # Documentation:
-# @raycast.description Opens a new Alacritty Window
+# @raycast.description Opens a new Wezterm Window
 
-open -n "/Applications/Alacritty.app/"
-
+open -n "/Applications/Wezterm.app/"
