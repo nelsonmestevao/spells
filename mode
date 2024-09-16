@@ -94,10 +94,12 @@ function change_theme_to() {
     dark)
       sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Dark"/g' "${code_settings}"
       sed -i "s/light =.*/light = false/g" "${git_config}"
+      gsettings set org.gnome.desktop.interface color-scheme prefer-dark
       ;;
     light)
       sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Light"/g' "${code_settings}"
       sed -i "s/light =.*/light = true/g" "${git_config}"
+      gsettings set org.gnome.desktop.interface color-scheme prefer-light
       ;;
   esac
 
