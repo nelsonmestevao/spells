@@ -76,10 +76,12 @@ function set_editor_font_size() {
 }
 
 function set_terminal_font_size() {
-  declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
+  # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
   declare -r size="$1"
+  declare -r wezterm_config="$DOTFILES/wezterm/wezterm.lua"
 
-  sed -i "s/size =.*/size = ${size}/g" "${alacritty_config}"
+  # sed -i "s/size =.*/size = ${size}/g" "${alacritty_config}"
+  sed -i "s/config.font_size =.*/config.font_size = ${size}/g" "${wezterm_config}"
 }
 
 function change_theme_to() {
@@ -124,9 +126,9 @@ function change_screen_to() {
       ;;
     chill)
       change_theme_to dark
-      set_notifications on
+      # set_notifications on
       set_editor_font_size 18
-      set_terminal_font_size 16.0
+      set_terminal_font_size 18
       ;;
 
     pitch) ;;
@@ -135,8 +137,8 @@ function change_screen_to() {
 
     demo)
       change_theme_to light
-      set_notifications off
-      set_editor_font_size 28
+      # set_notifications off
+      set_editor_font_size 32
       set_terminal_font_size 26.0
       ;;
   esac
