@@ -101,7 +101,8 @@ function change_theme_to() {
     light)
       # sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Light"/g' "${code_settings}"
       sed -i "s/light =.*/light = true/g" "${git_config}"
-      gsettings set org.gnome.desktop.interface color-scheme prefer-light
+      gsettings set org.gnome.desktop.interface color-scheme default
+      # gsettings set org.gnome.desktop.interface color-scheme prefer-light
       ;;
   esac
 
