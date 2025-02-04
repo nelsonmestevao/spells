@@ -34,8 +34,14 @@ function generate_new_key() {
 
   if command -v xclip >/dev/null 2>&1; then
     xclip -selection clipboard <"$SSH_PUB"
+  elif command -v pbcopy >/dev/null 2>&1; then
+    pbcopy <"$SSH_PUB"
+  elif command -v xsel >/dev/null 2>&1; then
+    xsel --clipboard <"$SSH_PUB"
+  elif command -v wl-copy >/dev/null 2>&1; then
+    wl-copy <"$SSH_PUB"
   else
-    echo "[ssh]: xclip not found, you need to copy manually the following key"
+    echo "[ssh]: xclip, pbcopy, xsel and wl-copy not found, you need to copy manually the following key"
     cat "$SSH_PUB"
     exit 1
   fi
