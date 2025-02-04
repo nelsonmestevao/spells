@@ -4,4 +4,4 @@ TODAY=$(date +"%j")
 CHRISTMAS=$(date -d 25-Dec +"%j")
 
 XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send -t 16000 "There are $((CHRISTMAS - TODAY)) days left until Christmas!"
-XDG_RUNTIME_DIR=/run/user/$(id -u) paplay ~/.spells/songs/christmas-song.wav
+XDG_RUNTIME_DIR=/run/user/$(id -u) pw-play ~/.spells/songs/christmas-song.wav
