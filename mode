@@ -115,7 +115,12 @@ function get_theme() {
   # declare -r config_file="$DOTFILES/alacritty/alacritty.toml"
   #
   # grep 'import = *' $config_file | awk -F '.' '{ print $3 }'
-  gsettings get org.gnome.desktop.interface color-scheme | grep -oE 'dark|light'
+  # gsettings get org.gnome.desktop.interface color-scheme | grep -oE 'dark|light'
+  case "$(gsettings get org.gnome.desktop.interface color-scheme)" in
+    *'dark'*) echo "dark" ;;
+    *'light'*) echo "light" ;;
+    *) echo "light" ;;  # Default to light if neither is found
+  esac
 }
 
 function change_screen_to() {
