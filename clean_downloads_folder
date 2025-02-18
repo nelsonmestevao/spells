@@ -21,7 +21,7 @@ for file in os.listdir(downloads_folder):
         move_file_to(file, "Images")
     elif file.lower().endswith((".mp3", ".wav", ".mpa")):
         move_file_to(file, "Music")
-    elif file.lower().endswith((".hs", ".sh", ".pl", ".py", ".rb", ".jl", ".r", ".js")):
+    elif file.lower().endswith((".hs", ".sh", ".pl", ".py", ".rb", ".jl", ".r", ".js", ".exs")):
         move_file_to(file, "Scripts")
     elif file.lower().endswith((".mp4", ".avi", ".mov", ".wmv", ".flv")):
         move_file_to(file, "Videos")
@@ -33,7 +33,7 @@ for file in os.listdir(downloads_folder):
         move_file_to(file, "Fonts")
     elif file.lower().endswith((".csv", ".dat", ".xml", ".vcf", ".json")):
         move_file_to(file, "Data")
-    elif file.lower().endswith((".zip", ".tar", ".rar", ".7z")):
+    elif file.lower().endswith((".zip", ".tar", ".rar", ".7z", ".gz", ".bz2")):
         move_file_to(file, "Archives")
     else:
         move_file_to(file, "Misc")
