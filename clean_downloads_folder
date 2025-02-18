@@ -34,6 +34,6 @@ for file in os.listdir(downloads_folder):
     elif file.lower().endswith((".csv", ".dat", ".xml", ".vcf", ".json")):
         move_file_to(file, "Data")
     elif file.lower().endswith((".zip", ".tar", ".rar", ".7z")):
-        move_file_to(file, "Compressed")
+        move_file_to(file, "Archives")
     else:
         move_file_to(file, "Misc")
