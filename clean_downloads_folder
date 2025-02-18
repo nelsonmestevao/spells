@@ -18,7 +18,7 @@ for file in os.listdir(downloads_folder):
     if file.lower().endswith(
         (".png", ".jpg", ".jpeg", ".gif", ".tif", ".tiff", ".bpm", ".svg")
     ):
-        move_file_to(file, "Pictures")
+        move_file_to(file, "Images")
     elif file.lower().endswith((".mp3", ".wav", ".mpa")):
         move_file_to(file, "Music")
     elif file.lower().endswith((".hs", ".sh", ".pl", ".py", ".rb", ".jl", ".r", ".js")):
