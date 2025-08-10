@@ -1,4 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.05
+#! nix-shell -p gum python313Full
+#! nix-shell -i python
 # -*- coding: utf-8 -*-
 import os, re
 
