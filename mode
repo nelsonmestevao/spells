@@ -79,10 +79,13 @@ function set_terminal_font_size() {
   # declare -r wezterm_config="$DOTFILES/wezterm/wezterm.lua"
   declare -r size="$1"
   declare -r ghostty_config="$DOTFILES/ghostty/config"
+  declare -r code_settings="$DOTFILES/vscode/settings.json"
 
   # sed -i "s/size =.*/size = ${size}/g" "${alacritty_config}"
   # sed -i "s/config.font_size =.*/config.font_size = ${size}/g" "${wezterm_config}"
   sed -i "s/font-size =.*/font-size = ${size}/g" "${ghostty_config}"
+
+  sed -i -e "s/\"terminal.integrated.fontSize\": .*/\"terminal.integrated.fontSize\": ${size},/g" "${code_settings}"
 }
 
 function change_theme_to() {
