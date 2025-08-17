@@ -43,7 +43,7 @@ awkscript='
   }
 '
 
-echo -e "\e[1;40m"
+# echo -e "\e[1;40m"
 clear
 
 if [[ -t 0 ]]; then
