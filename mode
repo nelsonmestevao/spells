@@ -78,7 +78,7 @@ function set_terminal_font_size() {
   # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
   # declare -r wezterm_config="$DOTFILES/wezterm/wezterm.lua"
   declare -r size="$1"
-  declare -r ghostty_config="$DOTFILES/ghostty/config"
+  declare -r ghostty_config="$DOTFILES/nixos/home/programs/ghostty/config"
   declare -r code_settings="$DOTFILES/vscode/settings.json"
 
   # sed -i "s/size =.*/size = ${size}/g" "${alacritty_config}"
@@ -92,7 +92,7 @@ function change_theme_to() {
   declare -r theme="$1"
 
   # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
-  declare -r git_config="$DOTFILES/git/gitconfig"
+  declare -r git_config="$DOTFILES/nixos/home/programs/git/gitconfig"
   # declare -r code_settings="$DOTFILES/vscode/settings.json"
 
   # sed -i "s|^import = \[.*\]|import = [\"~/.dotfiles/alacritty/themes/google.${theme}.toml\"]|" "${alacritty_config}"
