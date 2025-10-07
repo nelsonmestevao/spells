@@ -74,6 +74,13 @@ function set_editor_font_size() {
   sed -i -e "s/\"editor.fontSize\": .*/\"editor.fontSize\": ${size},/g" "${code_settings}"
 }
 
+function set_terminal_background_opacity() {
+  declare -r opacity="$1"
+  declare -r ghostty_config="$DOTFILES/nixos/home/programs/ghostty/config"
+
+  sed -i "s/background-opacity =.*/background-opacity = ${opacity}/g" "${ghostty_config}"
+}
+
 function set_terminal_font_size() {
   # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
   # declare -r wezterm_config="$DOTFILES/wezterm/wezterm.lua"
@@ -139,6 +146,7 @@ function change_screen_to() {
     chill)
       change_theme_to dark
       set_notifications on
+      set_terminal_background_opacity 0.5
       set_editor_font_size 18
       set_terminal_font_size 16
       ;;
@@ -150,6 +158,7 @@ function change_screen_to() {
     demo)
       change_theme_to light
       set_notifications off
+      set_terminal_background_opacity 1
       set_editor_font_size 32
       set_terminal_font_size 26
       ;;
