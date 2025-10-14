@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Usage: git conflicts
 # Show list of files in a conflict state.
