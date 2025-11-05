@@ -68,7 +68,7 @@ function set_notifications() {
 }
 
 function set_editor_font_size() {
-  declare -r code_settings="$DOTFILES/vscode/settings.json"
+  declare -r code_settings="$DOTFILES/home/programs/vscode/settings.json"
   declare -r size="$1"
 
   sed -i -e "s/\"editor.fontSize\": .*/\"editor.fontSize\": ${size},/g" "${code_settings}"
@@ -76,19 +76,17 @@ function set_editor_font_size() {
 
 function set_terminal_background_opacity() {
   declare -r opacity="$1"
-  declare -r ghostty_config="$DOTFILES/nixos/home/programs/ghostty/config"
+  declare -r ghostty_config="$DOTFILES/home/programs/ghostty/config"
 
   sed -i "s/background-opacity =.*/background-opacity = ${opacity}/g" "${ghostty_config}"
 }
 
 function set_terminal_font_size() {
-  # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
-  # declare -r wezterm_config="$DOTFILES/wezterm/wezterm.lua"
+  # declare -r wezterm_config="$DOTFILES/home/programs/wezterm/wezterm.lua"
   declare -r size="$1"
-  declare -r ghostty_config="$DOTFILES/nixos/home/programs/ghostty/config"
-  declare -r code_settings="$DOTFILES/vscode/settings.json"
+  declare -r ghostty_config="$DOTFILES/home/programs/ghostty/config"
+  declare -r code_settings="$DOTFILES/home/programs/vscode/settings.json"
 
-  # sed -i "s/size =.*/size = ${size}/g" "${alacritty_config}"
   # sed -i "s/config.font_size =.*/config.font_size = ${size}/g" "${wezterm_config}"
   sed -i "s/font-size =.*/font-size = ${size}/g" "${ghostty_config}"
 
@@ -99,7 +97,7 @@ function change_theme_to() {
   declare -r theme="$1"
 
   # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
-  declare -r git_config="$DOTFILES/nixos/home/programs/git/gitconfig"
+  declare -r git_config="$DOTFILES/home/programs/git/gitconfig"
   # declare -r code_settings="$DOTFILES/vscode/settings.json"
 
   # sed -i "s|^import = \[.*\]|import = [\"~/.dotfiles/alacritty/themes/google.${theme}.toml\"]|" "${alacritty_config}"
