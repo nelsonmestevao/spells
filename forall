@@ -1,10 +1,76 @@
 #!/usr/bin/env bash
 
-for dir in $(find . -mindepth 1 -maxdepth 1 -type d | sort); do
-    cd "$dir" || exit 1
-    echo -e "\033[32m$(pwd)\033[0m"
-    eval "$@"
-    cd ..
+
+show_help() {
+    cat <<'EOF'
+Usage: forall [--parallel|-p] [--jobs N] -- <command...>
+
+Run <command> in each immediate subdirectory.
+
+Options:
+  -p, --parallel        Run commands in parallel across directories
+      --jobs N          When parallel, allow up to N concurrent jobs (default: number of CPU cores)
+  -h, --help            Show this help
+
+Examples:
+  forall -- git status
+  forall -p --jobs 4 -- make test
+EOF
+}
+
+PARALLEL=0
+JOBS=
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -p|--parallel)
+            PARALLEL=1; shift ;;
+        --jobs)
+            JOBS="$2"; shift 2 ;;
+        --jobs=*)
+            JOBS="${1#*=}"; shift ;;
+        -h|--help)
+            show_help; exit 0 ;;
+        --)
+            shift; break ;;
+        --*)
+            echo "Unknown option: $1" >&2; show_help; exit 2 ;;
+        *)
+            break ;;
+    esac
 done
+
+if [[ $# -eq 0 ]]; then
+    echo "Error: missing command. Use -- to separate options from the command." >&2
+    show_help
+    exit 2
+fi
+
+CMD="$*"
+
+if [[ "$PARALLEL" -ne 1 ]]; then
+    for dir in $(find . -mindepth 1 -maxdepth 1 -type d | sort); do
+        cd "$dir" || exit 1
+        echo -e "\033[32m$(pwd)\033[0m"
+        eval "$CMD"
+        cd ..
+    done
+    exit 0
+fi
+
+if [[ -z "$JOBS" ]]; then
+    JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 4)
+fi
+
+if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || [[ "$JOBS" -lt 1 ]]; then
+    echo "Invalid --jobs value: $JOBS" >&2
+    exit 2
+fi
+
+find . -mindepth 1 -maxdepth 1 -type d -print0 \
+    | sort -z \
+    | xargs -0 -n1 -P "$JOBS" bash -c 'cd "$2" || exit 1; eval "$1"' _ "$CMD"
+
+exit $?
 
 # vim: ft=shell
