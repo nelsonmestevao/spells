@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-
 show_help() {
-    cat <<'EOF'
+	cat <<'EOF'
 Usage: forall [--parallel|-p] [--jobs N] -- <command...>
 
 Run <command> in each immediate subdirectory.
@@ -22,55 +21,144 @@ PARALLEL=0
 JOBS=
 
 while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -p|--parallel)
-            PARALLEL=1; shift ;;
-        --jobs)
-            JOBS="$2"; shift 2 ;;
-        --jobs=*)
-            JOBS="${1#*=}"; shift ;;
-        -h|--help)
-            show_help; exit 0 ;;
-        --)
-            shift; break ;;
-        --*)
-            echo "Unknown option: $1" >&2; show_help; exit 2 ;;
-        *)
-            break ;;
-    esac
+	case "$1" in
+	-p | --parallel)
+		PARALLEL=1
+		shift
+		;;
+	--jobs)
+		JOBS="$2"
+		shift 2
+		;;
+	--jobs=*)
+		JOBS="${1#*=}"
+		shift
+		;;
+	-h | --help)
+		show_help
+		exit 0
+		;;
+	--)
+		shift
+		break
+		;;
+	--*)
+		echo "Unknown option: $1" >&2
+		show_help
+		exit 2
+		;;
+	*)
+		break
+		;;
+	esac
 done
 
 if [[ $# -eq 0 ]]; then
-    echo "Error: missing command. Use -- to separate options from the command." >&2
-    show_help
-    exit 2
+	echo "Error: missing command. Use -- to separate options from the command." >&2
+	show_help
+	exit 2
 fi
 
 CMD="$*"
 
 if [[ "$PARALLEL" -ne 1 ]]; then
-    for dir in $(find . -mindepth 1 -maxdepth 1 -type d | sort); do
-        cd "$dir" || exit 1
-        echo -e "\033[32m$(pwd)\033[0m"
-        eval "$CMD"
-        cd ..
-    done
-    exit 0
+	for dir in $(find . -mindepth 1 -maxdepth 1 -type d | sort); do
+		cd "$dir" || exit 1
+		echo -e "\033[32m$(pwd)\033[0m"
+		eval "$CMD"
+		cd ..
+	done
+	exit 0
 fi
 
 if [[ -z "$JOBS" ]]; then
-    JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 4)
+	JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 4)
 fi
 
 if ! [[ "$JOBS" =~ ^[0-9]+$ ]] || [[ "$JOBS" -lt 1 ]]; then
-    echo "Invalid --jobs value: $JOBS" >&2
-    exit 2
+	echo "Invalid --jobs value: $JOBS" >&2
+	exit 2
 fi
 
-find . -mindepth 1 -maxdepth 1 -type d -print0 \
-    | sort -z \
-    | xargs -0 -n1 -P "$JOBS" bash -c 'cd "$2" || exit 1; eval "$1"' _ "$CMD"
+BASE_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/forall.$$.XXXX")
+export BASE_TMPDIR
+trap 'rm -rf "$BASE_TMPDIR"' EXIT INT TERM
 
-exit $?
+overall_rc=0
+
+(
+	find . -mindepth 1 -maxdepth 1 -type d -print0 |
+		sort -z |
+		xargs -0 -P "$JOBS" -I {} bash -c '
+            dir="$1"
+            if command -v md5sum >/dev/null 2>&1; then
+                h=$(printf "%s" "$dir" | md5sum | cut -d" " -f1)
+            elif command -v sha1sum >/dev/null 2>&1; then
+                h=$(printf "%s" "$dir" | sha1sum | cut -d" " -f1)
+            else
+                h=$(printf "%s" "$dir" | openssl dgst -sha1 | sed "s/^.*= //")
+            fi
+            out="$BASE_TMPDIR/out.$h"
+            status="$BASE_TMPDIR/status.$h"
+            if ! cd "$dir"; then
+                echo "cd failed" >"$out"
+                echo 1 >"$status"
+                exit 1
+            fi
+            eval "$2" >"$out" 2>&1
+            rc=$?
+            echo $rc >"$status"
+            exit $rc
+        ' _ {} "$CMD"
+) &
+
+xargs_pid=$!
+
+spinner() {
+	local pid=$1
+	local delay=0.12
+	while kill -0 "$pid" 2>/dev/null; do
+		for c in '|' '/' '-' '\'; do
+			if ! kill -0 "$pid" 2>/dev/null; then
+				break 2
+			fi
+			printf "\rRunning \033[32m$CMD\033[0m in parallel [%s]" "$c" >&2
+			sleep $delay
+		done
+	done
+	printf "\r" >&2
+}
+
+spinner "$xargs_pid" &
+spinner_pid=$!
+
+wait "$xargs_pid"
+kill "$spinner_pid" 2>/dev/null || true
+wait "$spinner_pid" 2>/dev/null || true
+printf "\r" >&2
+
+while IFS= read -r -d '' dir; do
+	if command -v md5sum >/dev/null 2>&1; then
+		h=$(printf "%s" "$dir" | md5sum | awk '{print $1}')
+	elif command -v sha1sum >/dev/null 2>&1; then
+		h=$(printf "%s" "$dir" | sha1sum | awk '{print $1}')
+	else
+		h=$(printf "%s" "$dir" | openssl dgst -sha1 | awk '{print $2}')
+	fi
+	out="$BASE_TMPDIR/out.$h"
+	status="$BASE_TMPDIR/status.$h"
+	printf "\033[32m%s\033[0m\n" "$(cd "$dir" && pwd)"
+	if [[ -f "$out" ]]; then
+		cat "$out"
+	fi
+	if [[ -f "$status" ]]; then
+		v=$(cat "$status" 2>/dev/null || echo 0)
+		if [[ "$v" -ne 0 ]]; then
+			overall_rc=$v
+		fi
+	fi
+done < <(find . -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+
+exit $overall_rc
 
 # vim: ft=shell
