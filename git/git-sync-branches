@@ -1,9 +1,7 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -I nixpkgs=channel:nixos-25.05
-#! nix-shell -p gum python313Full python313Packages.xonsh python313Packages.docopt
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
 #! nix-shell -i xonsh
-
-branches = [branch.strip() for branch in $(git branch | grep -vE '(main|trunk|mainline|default|stable|master|dev|devel|develop|development)$').strip().split("\n")]
 
 $RED="\033[1;31m"
 $YELLOW="\033[1;33m"
@@ -12,12 +10,15 @@ $BLUE="\033[1;34m"
 $RESET="\033[0m"
 
 # $RAISE_SUBPROC_ERROR = True
+def list_branches():
+    branches = $(git for-each-ref '--format=%(refname:short)' refs/heads).splitlines()
+    return [b for b in branches if b not in {"main", "master", "develop", "dev"}]
 
 if __name__ == "__main__":
     git checkout main
     git fetch fork
 
-    for branch in branches:
+    for branch in list_branches():
         title = f"Checking out {branch}"
 
         if not ![gum spin --align=right --title=@(title) --show-error -- git checkout @(branch)]: 
