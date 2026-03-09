@@ -1,0 +1,41 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.05
+#! nix-shell -p gum python313Full python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+
+branches = [branch.strip() for branch in $(git branch | grep -vE '(main|trunk|mainline|default|stable|master|dev|devel|develop|development)$').strip().split("\n")]
+
+$RED="\033[1;31m"
+$YELLOW="\033[1;33m"
+$GREEN="\033[1;32m"
+$BLUE="\033[1;34m"
+$RESET="\033[0m"
+
+# $RAISE_SUBPROC_ERROR = True
+
+if __name__ == "__main__":
+    git checkout main
+    git fetch fork
+
+    for branch in branches:
+        title = f"Checking out {branch}"
+
+        if not ![gum spin --align=right --title=@(title) --show-error -- git checkout @(branch)]: 
+            echo -e @(title) "$RED⨯$RESET"
+            continue
+
+        if not ![gum spin --align=right --title=@(title) --show-error -- git rebase fork/main]:
+            echo -e @(title) "$RED⨯$RESET"
+            break
+
+        if not ![gum spin --align=right --title=@(title) --show-error -- git commit --verbose --no-edit --amend]:
+            echo -e @(title) "$RED⨯$RESET"
+            break
+
+        if not ![gum spin --align=right --title=@(title) --show-error -- git push --force-with-lease --force-if-includes]:
+            echo -e @(title) "$RED⨯$RESET"
+            break
+
+        echo -e @(title) "$GREEN✓$RESET"
+
+# vim: ft=python
