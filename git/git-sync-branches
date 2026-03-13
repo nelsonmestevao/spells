@@ -2,6 +2,22 @@
 #! nix-shell -I nixpkgs=channel:nixos-25.11
 #! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
 #! nix-shell -i xonsh
+"""
+Sync all branches with the main branch of remote repository.
+
+Usage:
+  git_sync_branches [options]
+  git_sync_branches (-h | --help)
+  git_sync_branches --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+  -r --remote=<remote>   Remote repository [default: origin].
+  -b --branch=<branch>   Branch to sync [default: main].
+"""
+
+from docopt import docopt
 
 $RED="\033[1;31m"
 $YELLOW="\033[1;33m"
@@ -10,13 +26,24 @@ $BLUE="\033[1;34m"
 $RESET="\033[0m"
 
 # $RAISE_SUBPROC_ERROR = True
+def list_remotes():
+    """
+    List all configured git remotes.
+    """
+    return $(git remote).splitlines()
+
 def list_branches():
     branches = $(git for-each-ref '--format=%(refname:short)' refs/heads).splitlines()
     return [b for b in branches if b not in {"main", "master", "develop", "dev"}]
 
 if __name__ == "__main__":
-    git checkout main
-    git fetch fork
+    arguments = docopt(__doc__, version="git-sync-branches 0.1.0")
+    remote_branch = arguments["--branch"]
+    remote = arguments["--remote"]
+
+
+    git checkout @(remote_branch)
+    git fetch @(remote)
 
     for branch in list_branches():
         title = f"Checking out {branch}"
@@ -25,7 +52,7 @@ if __name__ == "__main__":
             echo -e @(title) "$RED⨯$RESET"
             continue
 
-        if not ![gum spin --align=right --title=@(title) --show-error -- git rebase fork/main]:
+        if not ![gum spin --align=right --title=@(title) --show-error -- git rebase @(remote)/@(remote_branch)]:
             echo -e @(title) "$RED⨯$RESET"
             break
 
