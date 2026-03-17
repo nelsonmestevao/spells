@@ -52,6 +52,31 @@ function toggle_keyboard_backlight() {
   fi
 }
 
+function get_caffeine_status() {
+  schemasdir=$(nix eval --raw nixpkgs#gnomeExtensions.caffeine)/share/gnome-shell/extensions/caffeine@patapon.info/schemas
+
+  gsettings --schemadir "$schemasdir" get org.gnome.shell.extensions.caffeine cli-toggle
+}
+
+function set_caffeine() {
+  declare -r status="$1"
+  # TODO: upgrade gnomeExtensions.caffeine to v59
+  return
+
+  # gnome-extensions disable caffeine@patapon.info
+  # gnome-extensions enable caffeine@patapon.info
+  schemasdir=$(nix eval --raw nixpkgs#gnomeExtensions.caffeine)/share/gnome-shell/extensions/caffeine@patapon.info/schemas
+
+  case $status in
+    on)
+      gsettings --schemadir "$schemasdir" set org.gnome.shell.extensions.caffeine cli-toggle true
+      ;;
+    off)
+      gsettings --schemadir "$schemasdir" set org.gnome.shell.extensions.caffeine cli-toggle false
+      ;;
+  esac
+}
+
 function set_notifications() {
   declare -r status="$1"
 
@@ -143,6 +168,7 @@ function change_screen_to() {
       ;;
     chill)
       change_theme_to dark
+      set_caffeine off
       set_notifications on
       set_terminal_background_opacity 0.5
       set_editor_font_size 18
@@ -155,6 +181,7 @@ function change_screen_to() {
 
     demo)
       change_theme_to light
+      set_caffeine on
       set_notifications off
       set_terminal_background_opacity 1
       set_editor_font_size 32
