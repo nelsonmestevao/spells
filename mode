@@ -118,34 +118,6 @@ function set_terminal_font_size() {
   sed -i -e "s/\"terminal.integrated.fontSize\": .*/\"terminal.integrated.fontSize\": ${size},/g" "${code_settings}"
 }
 
-function change_theme_to() {
-  declare -r theme="$1"
-
-  # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
-  declare -r git_config="$DOTFILES/home/programs/git/gitconfig"
-  # declare -r code_settings="$DOTFILES/vscode/settings.json"
-
-  # sed -i "s|^import = \[.*\]|import = [\"~/.dotfiles/alacritty/themes/google.${theme}.toml\"]|" "${alacritty_config}"
-
-  case $theme in
-    dark)
-      # sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Dark"/g' "${code_settings}"
-      sed -i "s/light =.*/light = false/g" "${git_config}"
-      gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-      ;;
-    light)
-      # sed -i -e 's/"workbench.colorTheme": ".*"/"workbench.colorTheme": "GitHub Light"/g' "${code_settings}"
-      sed -i "s/light =.*/light = true/g" "${git_config}"
-      gsettings set org.gnome.desktop.interface color-scheme default
-      # gsettings set org.gnome.desktop.interface color-scheme prefer-light
-      ;;
-  esac
-
-  # i3restart
-
-  echo "Theme changed to $theme!"
-}
-
 function get_theme() {
   # declare -r config_file="$DOTFILES/alacritty/alacritty.toml"
   #
@@ -167,7 +139,7 @@ function change_screen_to() {
       autorandr home
       ;;
     chill)
-      change_theme_to dark
+      theme dark
       set_caffeine off
       set_notifications on
       set_terminal_background_opacity 0.5
@@ -180,7 +152,7 @@ function change_screen_to() {
     focus) ;;
 
     demo)
-      change_theme_to light
+      theme light
       set_caffeine on
       set_notifications off
       set_terminal_background_opacity 1
