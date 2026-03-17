@@ -6,7 +6,7 @@
 Choose the desktop theme and applications' appearance based on that.
 
 Usage:
-  SCRIPT (dark | light)
+  SCRIPT [dark | light]
   SCRIPT (-h | --help)
   SCRIPT --version
 
@@ -28,18 +28,26 @@ $RESET="\033[0m"
 
 # $RAISE_SUBPROC_ERROR = True
 
-def set_theme_to(theme):
-  # declare -r alacritty_config="$DOTFILES/alacritty/alacritty.toml"
-  # sed -i "s|^import = \[.*\]|import = [\"~/.dotfiles/alacritty/themes/google.${theme}.toml\"]|" "${alacritty_config}"
-  git_config=os.path.expandvars("$DOTFILES/home/programs/git/gitconfig")
+DOTFILES     = os.path.expandvars("$DOTFILES")
+GIT_CONFIG   = f"{DOTFILES}/home/programs/git/gitconfig"
 
-  match theme:
-      case "dark":
-        sed -i "s/light =.*/light = false/g" @(git_config)
-        gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-      case "light":
-        sed -i "s/light =.*/light = true/g" @(git_config)
-        gsettings set org.gnome.desktop.interface color-scheme default
+def pick_theme_interactively():
+  return $(gum choose "dark" "light").strip()
+
+def set_theme_to(theme):
+  cfg = {
+        "dark": {
+            "gsettings_scheme": "prefer-dark",
+            "git_delta_light":  "false"
+        },
+        "light": {
+            "gsettings_scheme": "default",
+            "git_delta_light":  "true"
+        },
+    }[theme]
+
+  sed -i @(f"s/light =.*/light = {cfg['git_delta_light']}/g") @(GIT_CONFIG)
+  gsettings set org.gnome.desktop.interface color-scheme @(cfg["gsettings_scheme"])
 
   echo -e @(f"{theme} mode activated") "$GREEN✓$RESET"
 
@@ -50,5 +58,8 @@ if __name__ == "__main__":
         set_theme_to("dark")
     elif arguments["light"]:
         set_theme_to("light")
+    else:
+        theme = pick_theme_interactively()
+        set_theme_to(theme)
 
 # vim: ft=python
