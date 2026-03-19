@@ -1,1 +1,1 @@
-nix-shell -p python3 --command "python -m http.server"
+nix-shell -I nixpkgs=channel:nixos-25.11 -p python3 --command "python -m http.server"

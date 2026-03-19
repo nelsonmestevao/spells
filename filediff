@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -I nixpkgs=channel:nixos-25.05
+#! nix-shell -I nixpkgs=channel:nixos-25.11
 #! nix-shell -p delta
 #! nix-shell -i sh
 

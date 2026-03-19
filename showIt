@@ -4,8 +4,8 @@ clear
 
 for _ in {1..5}; do
   for art in "$@"; do
-    lolcat "$art"
-    sleep 0.3
+    cowecho "$art"
+    sleep 0.8
     clear
   done
 done
