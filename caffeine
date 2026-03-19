@@ -1,0 +1,70 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Choose the desktop theme and applications' appearance based on that.
+
+Usage:
+  SCRIPT [on | off | status]
+  SCRIPT (-h | --help)
+  SCRIPT --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+from docopt import docopt
+
+import os
+import sys
+
+$RED="\033[1;31m"
+$YELLOW="\033[1;33m"
+$GREEN="\033[1;32m"
+$BLUE="\033[1;34m"
+$RESET="\033[0m"
+
+# $RAISE_SUBPROC_ERROR = True
+
+def pick_status_interactively():
+  return $(gum choose "on" "off").strip()
+
+def gsettings_get_caffeine_status():
+    return $(gsettings get org.gnome.shell.extensions.caffeine cli-toggle).strip().lower()
+
+def get_caffeine_status():
+    match gsettings_get_caffeine_status():
+        case "true":
+            return "on"
+        case "false":
+            return "off"
+
+def set_caffeine(status):
+  match status:
+    case "on":
+      gsettings set org.gnome.shell.extensions.caffeine cli-toggle true
+    case "off":
+      gsettings set org.gnome.shell.extensions.caffeine cli-toggle false
+
+  echo -e @(f"caffeine is {status}") "$GREEN✓$RESET"
+
+def main(args):
+    if args["on"]:
+        set_caffeine("on")
+    elif args["off"]:
+        set_caffeine("off")
+    elif args["status"]:
+        print(get_caffeine_status())
+    else:
+        status = pick_status_interactively()
+        set_caffeine(status)
+
+if __name__ == "__main__":
+    program_name = os.path.basename(sys.argv[0])
+    arguments = docopt(__doc__.replace("SCRIPT", program_name), version=f"{program_name} 0.1.0")
+
+    main(arguments)
+
+# vim: ft=python
