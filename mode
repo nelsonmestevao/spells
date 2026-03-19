@@ -21,60 +21,14 @@ function display_help() {
     light
 
   $(help_section Screens)
-    // work            2 screens stacked (eDP1 on bottom)
-    work            2 screens side-by-side (eDP1 on right)
-    home            2 screens side-by-side
-    pitch           2 screens 2nd on top
-    chill           1 screen (eDP1)
-    focus           1 screen (HDMI1)
-    demo            ~2 screens mirror~, notifications off and increase font-size
+    chill           Notifications on, caffeine off, default font-size and dark mode
+    demo            Notifications off, caffeine on, big font-size and light mode
 
   $(help_section Options)
     -h, --help      Show this screen.
     -v, --version   Show version.
+    -t, --theme     Show current theme.
 EOF
-}
-
-function i3restart() {
-  i3-msg restart >/dev/null
-  numlockx on
-  setcapslock off
-  setxkbmap -option ctrl:nocaps
-}
-
-function toggle_keyboard_backlight() {
-  declare -r brightness=$(cat /sys/class/leds/tpacpi::kbd_backlight/brightness)
-
-  if [[ $brightness -eq 0 ]]; then
-    echo 1 >/sys/class/leds/tpacpi::kbd_backlight/brightness
-  else
-    echo 0 >/sys/class/leds/tpacpi::kbd_backlight/brightness
-  fi
-}
-
-function get_caffeine_status() {
-  schemasdir=$(nix eval --raw nixpkgs#gnomeExtensions.caffeine)/share/gnome-shell/extensions/caffeine@patapon.info/schemas
-
-  gsettings --schemadir "$schemasdir" get org.gnome.shell.extensions.caffeine cli-toggle
-}
-
-function set_caffeine() {
-  declare -r status="$1"
-  # TODO: upgrade gnomeExtensions.caffeine to v59
-  return
-
-  # gnome-extensions disable caffeine@patapon.info
-  # gnome-extensions enable caffeine@patapon.info
-  schemasdir=$(nix eval --raw nixpkgs#gnomeExtensions.caffeine)/share/gnome-shell/extensions/caffeine@patapon.info/schemas
-
-  case $status in
-    on)
-      gsettings --schemadir "$schemasdir" set org.gnome.shell.extensions.caffeine cli-toggle true
-      ;;
-    off)
-      gsettings --schemadir "$schemasdir" set org.gnome.shell.extensions.caffeine cli-toggle false
-      ;;
-  esac
 }
 
 function set_notifications() {
@@ -119,27 +73,25 @@ function set_terminal_font_size() {
 }
 
 function get_theme() {
-  # declare -r config_file="$DOTFILES/alacritty/alacritty.toml"
-  #
-  # grep 'import = *' $config_file | awk -F '.' '{ print $3 }'
-  # gsettings get org.gnome.desktop.interface color-scheme | grep -oE 'dark|light'
-  case "$(gsettings get org.gnome.desktop.interface color-scheme)" in
-    *'dark'*) echo "dark" ;;
-    *'light'*) echo "light" ;;
-    *) echo "light" ;;  # Default to light if neither is found
-  esac
+  theme status
 }
 
-function change_screen_to() {
+function set_theme() {
+  theme "$1"
+}
+
+function get_caffeine() {
+  caffeine status
+}
+
+function set_caffeine() {
+  caffeine "$1"
+}
+
+function change_to() {
   case $1 in
-    work)
-      autorandr work
-      ;;
-    home)
-      autorandr home
-      ;;
     chill)
-      theme dark
+      set_theme dark
       set_caffeine off
       set_notifications on
       set_terminal_background_opacity 0.5
@@ -149,10 +101,8 @@ function change_screen_to() {
 
     pitch) ;;
 
-    focus) ;;
-
     demo)
-      theme light
+      set_theme light
       set_caffeine on
       set_notifications off
       set_terminal_background_opacity 1
@@ -161,8 +111,6 @@ function change_screen_to() {
       ;;
   esac
 
-  # nitrogen --restore 2>/dev/null
-  # i3restart
   echo "Changed to mode $1!"
 }
 
@@ -174,16 +122,15 @@ case ${1:-error} in
     display_version "$PROGRAM" "$VERSION"
     ;;
   -t | --theme)
-    get_theme
+    theme status
     ;;
   -k | --keyboard)
-    toggle_keyboard_backlight
     ;;
   dark | light)
-    change_theme_to "$1"
+    theme "$1"
     ;;
-  work | home | chill | pitch | focus | demo)
-    change_screen_to "$1"
+  chill | pitch | demo)
+    change_to "$1"
     ;;
   *)
     display_help >&2

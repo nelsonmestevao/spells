@@ -6,7 +6,7 @@
 Choose the desktop theme and applications' appearance based on that.
 
 Usage:
-  SCRIPT [dark | light]
+  SCRIPT [dark | light | status]
   SCRIPT (-h | --help)
   SCRIPT --version
 
@@ -34,6 +34,18 @@ GIT_CONFIG   = f"{DOTFILES}/home/programs/git/gitconfig"
 def pick_theme_interactively():
   return $(gum choose "dark" "light").strip()
 
+def gsettings_get_color_scheme():
+  return $(gsettings get org.gnome.desktop.interface color-scheme).strip().lower()
+
+def get_current_theme():
+  match gsettings_get_color_scheme():
+    case "'prefer-dark'":
+        return "dark"
+    case "'default'":
+        return "light"
+    case _:
+        return "¯\\_(ツ)_/¯"
+
 def set_theme_to(theme):
   cfg = {
         "dark": {
@@ -51,15 +63,21 @@ def set_theme_to(theme):
 
   echo -e @(f"{theme} mode activated") "$GREEN✓$RESET"
 
-if __name__ == "__main__":
-    arguments = docopt(__doc__.replace("SCRIPT", os.path.basename(sys.argv[0])), version="theme 0.1.0")
-
-    if arguments["dark"]:
+def main(args):
+    if args["dark"]:
         set_theme_to("dark")
-    elif arguments["light"]:
+    elif args["light"]:
         set_theme_to("light")
+    elif args["status"]:
+        print(get_current_theme())
     else:
         theme = pick_theme_interactively()
         set_theme_to(theme)
+
+if __name__ == "__main__":
+    program_name = os.path.basename(sys.argv[0])
+    arguments = docopt(__doc__.replace("SCRIPT", program_name), version=f"{program_name} 0.1.0")
+
+    main(arguments)
 
 # vim: ft=python
