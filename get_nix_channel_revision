@@ -1,0 +1,6 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p curl bash
+#! nix-shell -i bash
+
+curl -sL https://channels.nixos.org/nixos-$1/git-revision

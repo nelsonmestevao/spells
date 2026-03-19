@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Copy text to clipboard via wl-copy.
+#
+# Usage:
+#   copy file.txt          # copy file contents
+#   copy < file.txt        # redirect file to clipboard
+#   echo "hello" | copy    # pipe to clipboard
+
+if [ $# -gt 0 ]; then
+  cat "$@" | wl-copy
+else
+  wl-copy
+fi
