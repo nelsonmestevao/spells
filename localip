@@ -1,0 +1,1 @@
+ip -brief addr show | awk '/^wlp.*UP/{print $3}' | cut -d/ -f1
