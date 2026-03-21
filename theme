@@ -1,4 +1,4 @@
-#!/usr/bin/env nix-shell
+#!/usr/bin/env cached-nix-shell
 #! nix-shell nix/shell/xonsh.nix -i xonsh
 """
 Choose the desktop theme and applications' appearance based on that.
