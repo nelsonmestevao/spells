@@ -126,14 +126,12 @@ def new_spell(name):
         name = pick_spell_name()
 
     if not name:
-        print(f"{RED}✗{RESET} No name provided.")
-        sys.exit(1)
+        error("No name provided.")
 
     path = os.path.join(SPELLS, name)
 
     if os.path.exists(path):
-        print(f"{RED}✗{RESET} Spell '{name}' already exists.")
-        sys.exit(1)
+        error(f"Spell '{name}' already exists.")
 
     description = $(gum write --placeholder "Short description of the spell").strip()
 
@@ -141,7 +139,7 @@ def new_spell(name):
         f.write(TEMPLATE.format(description=description or "TODO: describe this spell."))
 
     os.chmod(path, 0o755)
-    print(f"{GREEN}✓{RESET} Created spell '{name}'")
+    success(f"Created spell '{name}'")
 
     $EDITOR @(path)
 
@@ -150,14 +148,12 @@ def edit_spell(name):
         name = pick_spell_interactively()
 
     if not name:
-        print(f"{RED}✗{RESET} No spell selected.")
-        sys.exit(1)
+        error("No spell selected.")
 
     path = os.path.join(SPELLS, name)
 
     if not os.path.isfile(path):
-        print(f"{RED}✗{RESET} Spell '{name}' not found.")
-        sys.exit(1)
+        error(f"Spell '{name}' not found.")
 
     $EDITOR @(path)
 
