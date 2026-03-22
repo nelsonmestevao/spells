@@ -4,9 +4,9 @@
 Choose the desktop theme and applications' appearance based on that.
 
 Usage:
-  SCRIPT [dark | light | status]
-  SCRIPT (-h | --help)
-  SCRIPT --version
+  {program} [dark | light | status]
+  {program} (-h | --help)
+  {program} --version
 
 Options:
   -h --help              Show this screen.
@@ -73,8 +73,7 @@ def main(args):
         set_theme_to(theme)
 
 if __name__ == "__main__":
-    program_name = os.path.basename(sys.argv[0])
-    arguments = docopt(__doc__.replace("SCRIPT", program_name), version=f"{program_name} 0.1.0")
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
 
     main(arguments)
 
