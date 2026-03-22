@@ -34,6 +34,7 @@ $BLUE=$(tput setaf 4).strip()
 $MAGENTA=$(tput setaf 5).strip()
 $CYAN=$(tput setaf 6).strip()
 $WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
 $RESET=$(tput sgr0).strip()
 
 # These are easy to use in python commands.
@@ -45,24 +46,31 @@ BLUE=$(tput setaf 4).strip()
 MAGENTA=$(tput setaf 5).strip()
 CYAN=$(tput setaf 6).strip()
 WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
 RESET=$(tput sgr0).strip()
 
 
-def log_success(msg):
-    print(f"{GREEN}✓{RESET} {msg}")
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
 
-def log_error(msg):
-    print(f"{RED}✗{RESET} {msg}", file=sys.stderr)
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
     sys.exit(1)
 
+def execute(title, cmd):
+    if ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]:
+        success(title)
+    else:
+        error(title)
+
 def log_warn(msg):
-    print(f"{YELLOW}!{RESET} {msg}", file=sys.stderr)
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
 
 def log_info(msg):
-    print(f"{BLUE}·{RESET} {msg}")
+    print(f"{BLUE}◆{RESET} {msg}")
 
 def log_debug(msg):
-    print(f"{MAGENTA}?{RESET} {msg}")
+    print(f"{PINK}●{RESET} {msg}")
 
 
 SPELLS = os.path.expanduser("~/.spells")
@@ -75,6 +83,7 @@ TEMPLATE = '''#!/usr/bin/env cached-nix-shell
 {description}
 
 Usage:
+  {{program}} [options]
   {{program}} (-h | --help)
   {{program}} --version
 
@@ -97,8 +106,7 @@ $BLUE=$(tput setaf 4).strip()
 $MAGENTA=$(tput setaf 5).strip()
 $CYAN=$(tput setaf 6).strip()
 $WHITE=$(tput setaf 7).strip()
-$BOLD=$(tput bold).strip()
-$UNDERLINE=$(tput smul).strip()
+$PINK=$(tput setaf 13).strip()
 $RESET=$(tput sgr0).strip()
 
 # These are easy to use in python commands.
@@ -110,26 +118,31 @@ BLUE=$(tput setaf 4).strip()
 MAGENTA=$(tput setaf 5).strip()
 CYAN=$(tput setaf 6).strip()
 WHITE=$(tput setaf 7).strip()
-BOLD=$(tput bold).strip()
-UNDERLINE=$(tput smul).strip()
+PINK=$(tput setaf 13).strip()
 RESET=$(tput sgr0).strip()
 
 
-def log_success(msg):
-    print(f"{{GREEN}}✓{{RESET}} {{msg}}")
+def success(msg):
+    print(f"{{msg}} {{GREEN}}✓{{RESET}}")
 
-def log_error(msg):
-    print(f"{{RED}}✗{{RESET}} {{msg}}", file=sys.stderr)
+def error(msg):
+    print(f"{{msg}} {{RED}}✗{{RESET}}", file=sys.stderr)
     sys.exit(1)
 
+def execute(title, cmd):
+    if ![gum spin --align=right --title @(f"{{title}}...") --show-error -- @(cmd.split())]:
+        success(title)
+    else:
+        error(title)
+
 def log_warn(msg):
-    print(f"{{YELLOW}}!{{RESET}} {{msg}}", file=sys.stderr)
+    print(f"{{YELLOW}}▲{{RESET}} {{msg}}", file=sys.stderr)
 
 def log_info(msg):
-    print(f"{{BLUE}}·{{RESET}} {{msg}}")
+    print(f"{{BLUE}}◆{{RESET}} {{msg}}")
 
 def log_debug(msg):
-    print(f"{{MAGENTA}}?{{RESET}} {{msg}}")
+    print(f"{{PINK}}●{{RESET}} {{msg}}")
 
 def main(args):
     pass
@@ -156,12 +169,12 @@ def new_spell(name):
         name = pick_spell_name()
 
     if not name:
-        log_error("No name provided.")
+        error("No name provided.")
 
     path = os.path.join(SPELLS, name)
 
     if os.path.exists(path):
-        log_error(f"Spell '{name}' already exists.")
+        error(f"Spell '{name}' already exists.")
 
     description = $(gum input --placeholder "Short description of the spell").strip()
 
@@ -169,7 +182,7 @@ def new_spell(name):
         f.write(TEMPLATE.format(description=description or "TODO: describe this spell."))
 
     os.chmod(path, 0o755)
-    log_success(f"Created spell '{name}'")
+    success(f"Created spell '{name}'")
 
     $EDITOR @(path)
 
@@ -178,12 +191,12 @@ def edit_spell(name):
         name = pick_spell_interactively()
 
     if not name:
-        log_error("No spell selected.")
+        error("No spell selected.")
 
     path = os.path.join(SPELLS, name)
 
     if not os.path.isfile(path):
-        log_error(f"Spell '{name}' not found.")
+        error(f"Spell '{name}' not found.")
 
     $EDITOR @(path)
 
