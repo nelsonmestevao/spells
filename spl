@@ -6,7 +6,7 @@
 Manage spells.
 
 Usage:
-  {program} new [<name>]
+  {program} new [<name>] [--description=<desc>]
   {program} edit [<name>]
   {program} (-h | --help)
   {program} --version
@@ -16,8 +16,9 @@ Commands:
   edit      Open an existing spell in the editor.
 
 Options:
-  -h --help              Show this screen.
-  -v --version           Show version.
+  -h --help                    Show this screen.
+  -v --version                 Show version.
+  -d --description=<desc>      Short description of the spell.
 """
 
 from docopt import docopt
@@ -164,7 +165,7 @@ def pick_spell_interactively():
     spells.sort()
     return $(gum filter @(spells)).strip()
 
-def new_spell(name):
+def new_spell(name, description):
     if not name:
         name = pick_spell_name()
 
@@ -176,7 +177,8 @@ def new_spell(name):
     if os.path.exists(path):
         error(f"Spell '{name}' already exists.")
 
-    description = $(gum input --placeholder "Short description of the spell").strip()
+    if not description:
+        description = $(gum input --placeholder "Short description of the spell").strip()
 
     with open(path, 'w') as f:
         f.write(TEMPLATE.format(description=description or "TODO: describe this spell."))
@@ -202,7 +204,7 @@ def edit_spell(name):
 
 def main(args):
     if args["new"]:
-        new_spell(args["<name>"])
+        new_spell(args["<name>"], args["--description"])
     elif args["edit"]:
         edit_spell(args["<name>"])
 
