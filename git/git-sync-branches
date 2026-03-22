@@ -37,7 +37,7 @@ def list_branches():
     return [b for b in branches if b not in {"main", "master", "develop", "dev"}]
 
 if __name__ == "__main__":
-    arguments = docopt(__doc__, version="git-sync-branches 0.1.0")
+    arguments = docopt(__doc__.format(program=os.path.basename(__file__)), version=f'{os.path.basename(__file__)} v0.1.0')
     remote_branch = arguments["--branch"]
     remote = arguments["--remote"]
 
