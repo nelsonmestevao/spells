@@ -6,9 +6,9 @@
 Sync all branches with the main branch of remote repository.
 
 Usage:
-  git_sync_branches [options]
-  git_sync_branches (-h | --help)
-  git_sync_branches --version
+  {program} [options]
+  {program} (-h | --help)
+  {program} --version
 
 Options:
   -h --help              Show this screen.
@@ -16,6 +16,8 @@ Options:
   -r --remote=<remote>   Remote repository [default: origin].
   -b --branch=<branch>   Branch to sync [default: main].
 """
+
+import os
 
 from docopt import docopt
 
