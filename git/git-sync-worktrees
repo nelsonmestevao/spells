@@ -1,0 +1,137 @@
+#!/usr/bin/env cached-nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Sync all worktrees with the upstream principal branch of remote repository.
+
+Usage:
+  {program} [options]
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+  -r --remote=<remote>   Remote repository [default: origin].
+  -b --branch=<branch>   Branch to sync [default: main].
+"""
+
+from docopt import docopt
+
+import os
+import re
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+
+def fail(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def execute(title, cmd):
+    if execute_command(title, cmd):
+        success(title)
+        return True
+    else:
+        error(title)
+        return False
+
+def execute_command(title, cmd):
+    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
+
+def log_warn(msg):
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+def log_debug(msg):
+    print(f"{PINK}●{RESET} {msg}")
+
+def list_worktrees():
+    """
+    Parse `git worktree list` output to get (path, branch) tuples.
+    Skips main/master/develop/dev and bare/detached worktrees.
+    """
+    output = $(git worktree list).splitlines()
+    worktrees = []
+    for line in output:
+        # Format: /path/to/worktree  abc1234 [branch-name]
+        match = re.match(r'^(\S+)\s+\S+\s+\[(.+)\]$', line)
+        if not match:
+            continue
+        path, branch = match.group(1), match.group(2)
+        if branch not in {"main", "master", "develop", "dev"}:
+            worktrees.append((path, branch))
+    return worktrees
+
+def main(args):
+    remote = args["--remote"]
+    remote_branch = args["--branch"]
+
+    execute(f"Fetching from {remote}", f"git fetch {remote}")
+
+    worktrees = list_worktrees()
+
+    if not worktrees:
+        log_warn("No worktrees found to sync")
+        return
+
+    log_info(f"Found {len(worktrees)} worktree{'s' if len(worktrees) != 1 else ''} ({', '.join(branch for _, branch in worktrees)}) to sync")
+
+    original_dir = os.getcwd()
+
+    for path, branch in worktrees:
+        title = f"Syncing {branch}"
+        os.chdir(path)
+
+        if not execute_command(title, f"git rebase {remote}/{remote_branch}"):
+            error(f"Failed to rebase {branch} onto {remote}/{remote_branch}")
+            execute(f"Aborting rebase for {branch}", "git rebase --abort")
+            continue
+
+        if not execute_command(title, f"git push --force-with-lease --force-if-includes"):
+            error(f"Failed to push {branch} onto {remote}/{remote_branch}")
+            continue
+
+        success(title)
+
+    os.chdir(original_dir)
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python

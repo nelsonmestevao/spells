@@ -130,11 +130,20 @@ def error(msg):
     print(f"{{msg}} {{RED}}✗{{RESET}}", file=sys.stderr)
     sys.exit(1)
 
+def fail(msg):
+    error(msg)
+    sys.exit(1)
+
 def execute(title, cmd):
-    if ![gum spin --align=right --title @(f"{{title}}...") --show-error -- @(cmd.split())]:
+    if execute_command(title, cmd):
         success(title)
+        return True
     else:
         error(title)
+        return False
+
+def execute_command(title, cmd):
+    return ![gum spin --align=right --title @(f"{{title}}...") --show-error -- @(cmd.split())]
 
 def log_warn(msg):
     print(f"{{YELLOW}}▲{{RESET}} {{msg}}", file=sys.stderr)
