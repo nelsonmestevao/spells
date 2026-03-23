@@ -16,6 +16,7 @@ Options:
   -r --remote=<remote>   Remote repository [default: origin].
   -b --branch=<branch>   Branch to sync [default: main].
 """
+
 from docopt import docopt
 
 import os
@@ -46,6 +47,7 @@ WHITE=$(tput setaf 7).strip()
 PINK=$(tput setaf 13).strip()
 RESET=$(tput sgr0).strip()
 
+
 def success(msg):
     print(f"{msg} {GREEN}✓{RESET}")
 
@@ -57,10 +59,15 @@ def fail(msg):
     sys.exit(1)
 
 def execute(title, cmd):
-    if ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]:
+    if execute_command(title, cmd):
         success(title)
+        return True
     else:
         error(title)
+        return False
+
+def execute_command(title, cmd):
+    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
 
 def log_warn(msg):
     print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
@@ -71,45 +78,64 @@ def log_info(msg):
 def log_debug(msg):
     print(f"{PINK}●{RESET} {msg}")
 
-# $RAISE_SUBPROC_ERROR = True
-def list_remotes():
+def list_worktree_branches():
     """
-    List all configured git remotes.
+    Parse `git worktree list` output to get branches checked out in worktrees.
     """
-    return $(git remote).splitlines()
+    output = $(git worktree list).splitlines()
+    branches = set()
+    for line in output:
+        match = re.match(r'^(\S+)\s+\S+\s+\[(.+)\]$', line)
+        if match:
+            branches.add(match.group(2))
+    return branches
 
 def list_branches():
+    """
+    List local branches, excluding principal and worktree branches.
+    """
+    worktree_branches = list_worktree_branches()
+    principal = {"main", "master", "develop", "dev"}
     branches = $(git for-each-ref '--format=%(refname:short)' refs/heads).splitlines()
-    return [b for b in branches if b not in {"main", "master", "develop", "dev"}]
+    return [b for b in branches if b not in principal and b not in worktree_branches]
 
-if __name__ == "__main__":
-    arguments = docopt(__doc__.format(program=os.path.basename(__file__)), version=f'{os.path.basename(__file__)} v0.1.0')
-    remote_branch = arguments["--branch"]
-    remote = arguments["--remote"]
+def main(args):
+    remote = args["--remote"]
+    remote_branch = args["--branch"]
+
+    execute(f"Fetching from {remote}", f"git fetch {remote}")
+
+    execute(f"Checking out {remote_branch}", f"git checkout {remote_branch}")
+    branches = list_branches()
+
+    if not branches:
+        log_warn("No branches found to sync")
+        return
+
+    log_info(f"Found {len(branches)} branch{'es' if len(branches) != 1 else ''} ({', '.join(branches)}) to sync")
 
 
-    git checkout @(remote_branch)
-    git fetch @(remote)
+    for branch in branches:
+        title = f"Syncing {branch}"
 
-    for branch in list_branches():
-        title = f"Checking out {branch}"
-
-        if not ![gum spin --align=right --title=@(title) --show-error -- git checkout @(branch)]: 
-            echo -e @(title) "$RED⨯$RESET"
+        if not execute_command(title, f"git checkout {branch}"):
+            error(f"Failed to checkout {branch}")
             continue
 
-        if not ![gum spin --align=right --title=@(title) --show-error -- git rebase @(remote)/@(remote_branch)]:
-            echo -e @(title) "$RED⨯$RESET"
-            break
+        if not execute_command(title, f"git rebase {remote}/{remote_branch}"):
+            error(f"Failed to rebase {branch} onto {remote}/{remote_branch}")
+            execute(f"Aborting rebase for {branch}", "git rebase --abort")
+            continue
 
-        if not ![gum spin --align=right --title=@(title) --show-error -- git commit --verbose --no-edit --amend]:
-            echo -e @(title) "$RED⨯$RESET"
-            break
+        if not execute_command(title, "git push --force-with-lease --force-if-includes"):
+            error(f"Failed to push {branch}")
+            continue
 
-        if not ![gum spin --align=right --title=@(title) --show-error -- git push --force-with-lease --force-if-includes]:
-            echo -e @(title) "$RED⨯$RESET"
-            break
+        success(title)
 
-        echo -e @(title) "$GREEN✓$RESET"
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
 
 # vim: ft=python
