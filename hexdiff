@@ -1,0 +1,142 @@
+#!/usr/bin/env cached-nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Show hex.pm diff links for all changed package versions in mix.lock.
+
+Usage:
+  {program} [<base>]
+  {program} (-h | --help)
+  {program} --version
+
+Arguments:
+  base          Base branch or ref to diff against [default: main].
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+from docopt import docopt
+
+import os
+import re
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def log_warn(msg):
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+def log_debug(msg):
+    print(f"{PINK}●{RESET} {msg}")
+
+
+# Pattern to extract package name and version from a mix.lock hex entry
+HEX_RE = re.compile(r'^\s*"([^"]+)":\s*\{:hex,\s*:\w+,\s*"([^"]+)"')
+
+
+def parse_hex_versions(lines):
+    """Parse mix.lock lines into a dict of {package: version}."""
+    versions = {}
+    for line in lines:
+        m = HEX_RE.match(line)
+        if m:
+            versions[m.group(1)] = m.group(2)
+    return versions
+
+
+def main(args):
+    base = args["<base>"] or "main"
+
+    # Check we're in a git repo with a mix.lock
+    if not os.path.isfile("mix.lock"):
+        error("No mix.lock found in current directory")
+
+    diff_output = $(git diff @(base) -- mix.lock 2>&1).strip()
+
+    if not diff_output:
+        log_info("No changes to mix.lock")
+        return
+
+    old_lines = []
+    new_lines = []
+
+    for line in diff_output.splitlines():
+        if line.startswith("-") and not line.startswith("---"):
+            old_lines.append(line[1:])
+        elif line.startswith("+") and not line.startswith("+++"):
+            new_lines.append(line[1:])
+
+    old_versions = parse_hex_versions(old_lines)
+    new_versions = parse_hex_versions(new_lines)
+
+    # Find packages that changed version
+    changes = []
+    for pkg, new_ver in sorted(new_versions.items()):
+        old_ver = old_versions.get(pkg)
+        if old_ver and old_ver != new_ver:
+            changes.append((pkg, old_ver, new_ver))
+
+    if not changes:
+        log_info("No hex package version changes found")
+        return
+
+    # Find max lengths for alignment
+    max_pkg = max(len(c[0]) for c in changes)
+    max_old = max(len(c[1]) for c in changes)
+    max_new = max(len(c[2]) for c in changes)
+
+    print()
+    header = f"  {'Package':<{max_pkg}}   {'From':<{max_old}}   {'To':<{max_new}}   Diff"
+    print(f"{BLUE}{header}{RESET}")
+    print(f"  {'─' * max_pkg}   {'─' * max_old}   {'─' * max_new}   {'─' * 20}")
+
+    for pkg, old_ver, new_ver in changes:
+        url = f"https://diff.hex.pm/diff/{pkg}/{old_ver}..{new_ver}"
+        print(f"  {WHITE}{pkg:<{max_pkg}}{RESET}   {RED}{old_ver:<{max_old}}{RESET}   {GREEN}{new_ver:<{max_new}}{RESET}   {CYAN}{url}{RESET}")
+
+    print()
+    log_info(f"{len(changes)} package(s) changed")
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
