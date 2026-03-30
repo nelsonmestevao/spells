@@ -1,3 +1,14 @@
 #!/usr/bin/env bash
 
-git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs git branch -D
+git fetch -p
+
+git branch --merged main | grep -v "main\|master\|\*" | xargs git branch -d
+
+git worktree list --porcelain | grep "^worktree " | awk '{print $2}' | while read wt; do
+  branch=$(git -C "$wt" branch --show-current 2>/dev/null)
+  if [ -n "$branch" ] && git branch --merged main | grep -q "$branch"; then
+    git worktree remove "$wt"
+  fi
+done
+
+git branch -r --merged main | grep -v "main\|master\|HEAD" | grep "origin" | sed 's/origin\///' | xargs -I {} git push origin --delete {}
