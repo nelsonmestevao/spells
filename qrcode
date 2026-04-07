@@ -1,0 +1,12 @@
+#!/usr/bin/env cached-nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p deno
+#! nix-shell -i bash
+exec deno run - "$@" <<'DENO'
+import QRCode from "npm:qrcode@1.5";
+
+const url = Deno.args[0];
+const qr = await QRCode.toString(url, { type: "terminal", small: true });
+console.log(qr);
+console.log(`\n${url}\n`);
+DENO
