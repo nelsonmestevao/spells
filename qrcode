@@ -5,8 +5,11 @@
 exec deno run - "$@" <<'DENO'
 import QRCode from "npm:qrcode@1.5";
 
-const url = Deno.args[0];
-const qr = await QRCode.toString(url, { type: "terminal", small: true });
+const args = Deno.args.filter(a => a !== "--large");
+const large = Deno.args.includes("--large");
+const url = args[0];
+const opts = { type: "terminal", ...(large ? {} : { small: true }) };
+const qr = await QRCode.toString(url, opts);
 console.log(qr);
 console.log(`\n${url}\n`);
 DENO
