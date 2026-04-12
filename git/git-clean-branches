@@ -1,14 +1,75 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+dry_run=false
+remote=false
+main_branch="main"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run|-n) dry_run=true; shift ;;
+    --remote|-r) remote=true; shift ;;
+    --help|-h)
+      echo "Usage: git clean-branches [--dry-run|-n] [--remote|-r] [branch]"
+      echo ""
+      echo "  --dry-run, -n   Preview deletions without executing them"
+      echo "  --remote, -r    Also delete merged remote branches"
+      echo "  branch          Main branch to compare against (default: main)"
+      exit 0
+      ;;
+    -*) echo "Unknown option: $1" >&2; exit 1 ;;
+    *) main_branch="$1"; shift ;;
+  esac
+done
+
+current_branch=$(git branch --show-current 2>/dev/null || echo "")
+
+run() {
+  if $dry_run; then
+    echo "  (dry-run) $*"
+  else
+    "$@"
+  fi
+}
 
 git fetch -p
 
-git branch --merged main | grep -v "main\|master\|\*" | xargs git branch -d
+# Delete branches detected as merged (fast-forward merges)
+merged_branches=$(git branch --merged "$main_branch" | grep -v "main\|master\|\*" || true)
+for branch in $merged_branches; do
+  [[ "$branch" == "$current_branch" ]] && continue
+  echo "Deleting merged branch: $branch"
+  run git branch -d "$branch"
+done
 
-git worktree list --porcelain | grep "^worktree " | awk '{print $2}' | while read wt; do
-  branch=$(git -C "$wt" branch --show-current 2>/dev/null)
-  if [ -n "$branch" ] && git branch --merged main | grep -q "$branch"; then
-    git worktree remove "$wt"
+# Delete branches that were squash-merged into the main branch
+git for-each-ref --format '%(refname:short)' refs/heads/ | while read -r branch; do
+  [[ "$branch" == "$main_branch" || "$branch" == "master" || "$branch" == "$current_branch" ]] && continue
+
+  merge_base=$(git merge-base "origin/$main_branch" "$branch" 2>/dev/null) || continue
+  tree=$(git rev-parse "$branch^{tree}" 2>/dev/null) || continue
+  merge_commit=$(git commit-tree "$tree" -p "$merge_base" -m "test" 2>/dev/null) || continue
+
+  if git cherry "origin/$main_branch" "$merge_commit" 2>/dev/null | grep -q '^-'; then
+    echo "Deleting squash-merged branch: $branch"
+    run git branch -D "$branch"
   fi
 done
 
-git branch -r --merged main | grep -v "main\|master\|HEAD" | grep "origin" | sed 's/origin\///' | xargs -I {} git push origin --delete {}
+# Clean up worktrees pointing to deleted branches
+git worktree list --porcelain | grep "^worktree " | awk '{print $2}' | while read -r wt; do
+  branch=$(git -C "$wt" branch --show-current 2>/dev/null)
+  if [ -n "$branch" ] && ! git rev-parse --verify "$branch" &>/dev/null; then
+    echo "Removing worktree: $wt (branch $branch no longer exists)"
+    run git worktree remove --force "$wt"
+  fi
+done
+
+# Delete remote branches that are merged
+if $remote; then
+  remote_merged=$(git branch -r --merged "origin/$main_branch" | grep -v "main\|master\|HEAD" | grep "origin" | sed 's/origin\///' || true)
+  for branch in $remote_merged; do
+    echo "Deleting remote branch: origin/$branch"
+    run git push origin --delete "$branch"
+  done
+fi
