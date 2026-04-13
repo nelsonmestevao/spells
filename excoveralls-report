@@ -1,0 +1,247 @@
+#!/usr/bin/env cached-nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Parse an excoveralls HTML report and generate coverage stats as markdown and CSV.
+
+Looks for cover/excoveralls.html in the current directory by default.
+Outputs are written next to the input file.
+
+Usage:
+  {program} [<html-file>]
+  {program} (-h | --help)
+  {program} --version
+
+Arguments:
+  html-file     Path to excoveralls.html [default: cover/excoveralls.html].
+
+Options:
+  -h --help     Show this screen.
+  -v --version  Show version.
+"""
+
+from docopt import docopt
+
+import os
+import re
+import sys
+from collections import defaultdict
+
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$WHITE=$(tput setaf 7).strip()
+$RESET=$(tput sgr0).strip()
+
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+WHITE=$(tput setaf 7).strip()
+RESET=$(tput sgr0).strip()
+
+PATTERN = re.compile(
+    r"<span class=.cov\s+\w+.>([0-9.]+)</span>\s*"
+    r"<a href=.[^.]*[^>]*>\s*"
+    r"(?:<span class=.dirname.>([^<]*)</span>\s*)?"
+    r"<span class=.basename.>([^<]*)</span>"
+)
+
+BT = "`"
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+
+def error(msg):
+    print(f"{RED}✗{RESET} {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+
+def parse_html(path):
+    """Extract (filepath, coverage_pct) pairs from excoveralls HTML."""
+    with open(path, "r") as f:
+        content = f.read()
+
+    results = []
+    for pct, dirname, basename in PATTERN.findall(content):
+        results.append((dirname + basename, float(pct)))
+
+    if not results:
+        error(f"No coverage data found in {path}")
+
+    return results
+
+
+def bucket(results):
+    """Split results into coverage buckets."""
+    return {
+        "none": [(f, p) for f, p in results if p == 0.0],
+        "low": [(f, p) for f, p in results if 0 < p < 50],
+        "medium": [(f, p) for f, p in results if 50 <= p < 80],
+        "high": [(f, p) for f, p in results if 80 <= p < 100],
+        "full": [(f, p) for f, p in results if p == 100.0],
+    }
+
+
+def group_by_module(results):
+    """Group files by their top-level module directory."""
+    groups = defaultdict(list)
+
+    for f, p in results:
+        # Normalize web paths
+        if f.startswith("lib/logflare_web/"):
+            stripped = "web/" + f.removeprefix("lib/logflare_web/")
+        else:
+            stripped = f.removeprefix("lib/logflare/")
+
+        parts = stripped.split("/")
+        group = parts[0] + "/" if len(parts) > 1 else "(root)"
+        groups[group].append((f, p))
+
+    return groups
+
+
+def generate_markdown(results, buckets, groups, source_path):
+    """Build the markdown report as a string."""
+    total = len(results)
+    avg = sum(p for _, p in results) / total
+
+    lines = []
+    lines.append("# Coverage Report")
+    lines.append("")
+    lines.append(f"Generated from: {source_path}")
+    lines.append("")
+
+    # Summary
+    lines.append("## Summary")
+    lines.append("")
+    lines.append("| Metric | Value |")
+    lines.append("|--------|-------|")
+    lines.append(f"| Total files | {total} |")
+    lines.append(f"| Average coverage | {avg:.1f}% |")
+    for label, key in [("100%", "full"), ("80-99%", "high"), ("50-79%", "medium"), ("1-49%", "low"), ("0%", "none")]:
+        count = len(buckets[key])
+        lines.append(f"| Files at {label} | {count} ({count * 100 // total}%) |")
+    lines.append("")
+
+    # Module groups
+    lines.append("## Coverage by Module Group")
+    lines.append("")
+    lines.append("| Module | Files | Avg Coverage | Min | Max |")
+    lines.append("|--------|-------|-------------|-----|-----|")
+
+    group_stats = []
+    for group, files in sorted(groups.items()):
+        gavg = sum(p for _, p in files) / len(files)
+        gmin = min(p for _, p in files)
+        gmax = max(p for _, p in files)
+        group_stats.append((group, len(files), gavg, gmin, gmax))
+
+    for group, count, gavg, gmin, gmax in sorted(group_stats, key=lambda x: x[2]):
+        lines.append(f"| {group} | {count} | {gavg:.1f}% | {gmin:.1f}% | {gmax:.1f}% |")
+    lines.append("")
+
+    # Zero coverage
+    lines.append("## Files with 0% Coverage")
+    lines.append("")
+    for f, _ in sorted(buckets["none"]):
+        lines.append(f"- {BT}{f}{BT}")
+    lines.append("")
+
+    # Low coverage
+    lines.append("## Files with Low Coverage (1-49%)")
+    lines.append("")
+    lines.append("| File | Coverage |")
+    lines.append("|------|----------|")
+    for f, p in sorted(buckets["low"], key=lambda x: x[1]):
+        lines.append(f"| {BT}{f}{BT} | {p:.1f}% |")
+    lines.append("")
+
+    # Medium coverage
+    lines.append("## Files with Medium Coverage (50-79%)")
+    lines.append("")
+    lines.append("| File | Coverage |")
+    lines.append("|------|----------|")
+    for f, p in sorted(buckets["medium"], key=lambda x: x[1]):
+        lines.append(f"| {BT}{f}{BT} | {p:.1f}% |")
+    lines.append("")
+
+    # Full listing
+    lines.append("## All Files (sorted by coverage, ascending)")
+    lines.append("")
+    lines.append("| File | Coverage | Level |")
+    lines.append("|------|----------|-------|")
+    for f, p in sorted(results, key=lambda x: x[1]):
+        level = "none" if p == 0.0 else "low" if p < 50 else "medium" if p < 80 else "high"
+        lines.append(f"| {BT}{f}{BT} | {p:.1f}% | {level} |")
+
+    return "\n".join(lines) + "\n"
+
+
+def generate_csv(results):
+    """Build the CSV report as a string."""
+    lines = ["file,coverage_pct,level"]
+    for f, p in sorted(results, key=lambda x: x[1]):
+        level = "none" if p == 0.0 else "low" if p < 50 else "medium" if p < 80 else "high"
+        lines.append(f"{f},{p},{level}")
+    return "\n".join(lines) + "\n"
+
+
+def main(args):
+    html_file = args["<html-file>"] or "cover/excoveralls.html"
+
+    if not os.path.isfile(html_file):
+        error(f"File not found: {html_file}")
+
+    output_dir = os.path.dirname(html_file) or "."
+    md_path = os.path.join(output_dir, "coverage_report.md")
+    csv_path = os.path.join(output_dir, "coverage_report.csv")
+
+    log_info(f"Parsing {html_file}")
+
+    results = parse_html(html_file)
+    buckets = bucket(results)
+    groups = group_by_module(results)
+
+    total = len(results)
+    avg = sum(p for _, p in results) / total
+
+    md_report = generate_markdown(results, buckets, groups, html_file)
+    csv_report = generate_csv(results)
+
+    with open(md_path, "w") as f:
+        f.write(md_report)
+    success(f"Wrote {md_path}")
+
+    with open(csv_path, "w") as f:
+        f.write(csv_report)
+    success(f"Wrote {csv_path}")
+
+    # Print summary to terminal
+    print()
+    header = f"  {'Bucket':<12}  {'Files':>5}  {'Share':>6}"
+    print(f"{BLUE}{header}{RESET}")
+    print(f"  {'─' * 12}  {'─' * 5}  {'─' * 6}")
+    for label, key, color in [("100%", "full", GREEN), ("80-99%", "high", GREEN), ("50-79%", "medium", YELLOW), ("1-49%", "low", RED), ("0%", "none", RED)]:
+        count = len(buckets[key])
+        share = f"{count * 100 // total}%"
+        print(f"  {color}{label:<12}{RESET}  {count:>5}  {share:>6}")
+
+    print()
+    log_info(f"{total} files, {avg:.1f}% average coverage")
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
