@@ -1,0 +1,101 @@
+#!/usr/bin/env cached-nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Select a git worktree interactively and print its path.
+
+Usage:
+  {program} [options]
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+from docopt import docopt
+
+import os
+import re
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}", file=sys.stderr)
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def log_warn(msg):
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}", file=sys.stderr)
+
+
+def main(args):
+    output = $(git worktree list 2>&1).strip()
+
+    if not output:
+        error("No worktrees found")
+
+    lines = output.splitlines()
+
+    if len(lines) < 2:
+        error("Only one worktree (the main one)")
+
+    # Build display lines: "branch  path"
+    entries = []
+    for line in lines:
+        match = re.match(r'^(\S+)\s+\S+\s+\[(.+)\]$', line)
+        if match:
+            path, branch = match.group(1), match.group(2)
+            entries.append(f"{branch}\t{path}")
+
+    if not entries:
+        error("No worktrees found")
+
+    display = "\n".join(entries)
+    selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
+
+    if not selected:
+        sys.exit(1)
+
+    # Extract the path (second column)
+    path = selected.split("\t")[1]
+    print(path)
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
