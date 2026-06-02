@@ -99,7 +99,26 @@ def list_branches():
     branches = $(git for-each-ref '--format=%(refname:short)' refs/heads).splitlines()
     return [b for b in branches if b not in principal and b not in worktree_branches]
 
+def ensure_tmpdir():
+    """
+    cached-nix-shell exports TMPDIR/TMP/TEMP pointing at a scratch directory it
+    never creates. Git writes temp files there when creating commit objects, so
+    a missing TMPDIR makes every `git rebase` fail with:
+        error: could not create temporary file: No such file or directory
+    Create the directory if it is missing, falling back to /tmp.
+    """
+    for var in ("TMPDIR", "TMP", "TEMP"):
+        path = os.environ.get(var)
+        if not path:
+            continue
+        try:
+            os.makedirs(path, exist_ok=True)
+        except OSError:
+            os.environ[var] = "/tmp"
+
 def main(args):
+    ensure_tmpdir()
+
     remote = args["--remote"]
     remote_branch = args["--branch"]
 
