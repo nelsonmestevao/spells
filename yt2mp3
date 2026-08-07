@@ -1,0 +1,84 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-25.11
+#! nix-shell -p yt-dlp ffmpeg
+#! nix-shell -i bash
+
+set -Eeuo pipefail
+
+# shellcheck source=./helpers.sh
+. helpers.sh
+
+PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
+VERSION=0.1.0
+
+function display_help() {
+  cat <<EOF
+  $(help_section Usage)
+    ${PROGRAM} [options] URL [URL...]
+
+  $(help_section Description)
+    Download one or more videos with yt-dlp and extract the audio
+    into MP3 files. Files are named after the video title and saved to
+    the current directory unless -o is given.
+
+  $(help_section Options)
+    -o, --output DIR    Directory to save the MP3 files (default: .).
+    -q, --quality N     Audio quality, 0 (best) to 9 (worst) (default: 0).
+    -h, --help          Show this screen.
+    -v, --version       Show version.
+
+  $(help_section Examples)
+    ${PROGRAM} https://youtu.be/dQw4w9WgXcQ
+    ${PROGRAM} -o ~/Music -q 2 URL1 URL2
+EOF
+}
+
+OUTPUT_DIR="."
+QUALITY=0
+URLS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h | --help)
+      display_help
+      exit 0
+      ;;
+    -v | --version)
+      display_version "$PROGRAM" "$VERSION"
+      exit 0
+      ;;
+    -o | --output)
+      OUTPUT_DIR="${2:?missing directory for $1}"
+      shift 2
+      ;;
+    -q | --quality)
+      QUALITY="${2:?missing value for $1}"
+      shift 2
+      ;;
+    -*)
+      log_error "unknown option: $1"
+      display_help >&2
+      exit 1
+      ;;
+    *)
+      URLS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ ${#URLS[@]} -eq 0 ]]; then
+  display_help >&2
+  exit 1
+fi
+
+mkdir -p "$OUTPUT_DIR"
+
+yt-dlp \
+  --ignore-errors \
+  --extract-audio \
+  --audio-format mp3 \
+  --audio-quality "$QUALITY" \
+  --add-metadata \
+  --output "${OUTPUT_DIR%/}/%(title)s.%(ext)s" \
+  "${URLS[@]}"
