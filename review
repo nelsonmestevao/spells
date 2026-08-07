@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+# 1. Determine the target
+if [ $# -eq 0 ]; then
+    # Find common ancestor
+    BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
+    
+    if [ -z "$BASE" ]; then
+        # Fallback to just uncommitted changes if no base is found
+        TARGET=""
+    else
+        TARGET="$BASE..HEAD"
+    fi
+else
+    # Join all arguments into one string
+    TARGET="$*"
+fi
+
+echo "--- Reviewing: ${TARGET:-"Local Changes"} ---"
+
+# 2. Run via nix-shell with escaped quotes
+# We use printf %q to safely escape the TARGET for the subshell
+SAFE_TARGET=$(printf '%q' "$TARGET")
+
+nix-shell -p nodejs --run "npx difit $SAFE_TARGET"
