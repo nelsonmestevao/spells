@@ -29,7 +29,7 @@ $RESET="\033[0m"
 # $RAISE_SUBPROC_ERROR = True
 
 DOTFILES     = os.path.expandvars("$DOTFILES")
-GIT_CONFIG   = f"{DOTFILES}/home/programs/git/gitconfig"
+GIT_CONFIG   = f"{DOTFILES}/home/programs/git/common.ini"
 
 def pick_theme_interactively():
   return $(gum choose "dark" "light").strip()
