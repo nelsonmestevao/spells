@@ -1,0 +1,187 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-26.05
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Run doctest inside a nix-shell that provides GHC, QuickCheck and doctest,
+ignoring cabal/GHC environment files.
+
+Usage:
+  {program} [options] [-p <pkg>]... [<file>...] [-- <doctest-arg>...]
+  {program} (-h | --help)
+  {program} --version
+
+Arguments:
+  <file>                 Haskell source files (or directories) to test.
+                         Defaults to the current directory, which doctest
+                         expands to every *.hs and *.lhs file inside it.
+  <doctest-arg>          Anything after "--" is passed verbatim to doctest
+                         and, from there, to GHC (e.g. --verbose, -Wall).
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+  -p --package=<pkg>     Extra Haskell package to make available (e.g. gloss).
+                         Can be repeated. QuickCheck is always included.
+  -n --dry-run           Print the nix-shell command instead of running it.
+"""
+
+from docopt import docopt
+
+import os
+import re
+import shlex
+import subprocess
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def fail(msg):
+    error(msg)
+    sys.exit(1)
+
+def execute(title, cmd):
+    if execute_command(title, cmd):
+        success(title)
+        return True
+    else:
+        error(title)
+        return False
+
+def execute_command(title, cmd):
+    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
+
+def log_warn(msg):
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+def log_debug(msg):
+    print(f"{PINK}●{RESET} {msg}")
+
+
+# Same nixpkgs as the shebang above, so GHC and doctest always match.
+NIXPKGS = "channel:nixos-26.05"
+
+# doctest needs QuickCheck for `prop>` examples (and template-haskell, which
+# every GHC ships with, for the splice doctest generates around them).
+BASE_PACKAGES = ["QuickCheck"]
+
+PACKAGE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
+
+# doctest finds GHC through the ghc-paths library, which is compiled against
+# the bare GHC. nixpkgs patches ghc-paths to honour these variables, so we
+# point them at the ghcWithPackages wrapper that is first in PATH.
+# `-package-env -` makes GHC ignore ~/.ghc/*/environments/default and any
+# .ghc.environment.* file (written by `cabal install --lib`), which would
+# otherwise hide every package not listed there, template-haskell included.
+RUN_TEMPLATE = (
+    'export NIX_GHC="$(command -v ghc)" '
+    'NIX_GHCPKG="$(command -v ghc-pkg)" '
+    'NIX_GHC_LIBDIR="$(ghc --print-libdir)"; '
+    "exec {doctest}"
+)
+
+
+def split_passthrough(argv):
+    """Split argv into (our args, args forwarded to doctest) at the first '--'."""
+    if "--" in argv:
+        i = argv.index("--")
+        return argv[:i], argv[i + 1:]
+    return argv, []
+
+def validate_packages(packages):
+    for pkg in packages:
+        if not PACKAGE_NAME.match(pkg):
+            error(f"Invalid Haskell package name: {pkg!r}")
+
+def ghc_expression(packages):
+    attrs = " ".join(f'p."{pkg}"' for pkg in packages)
+    return f"haskellPackages.ghcWithPackages (p: [ {attrs} ])"
+
+def doctest_command(files, doctest_args):
+    return shlex.join(["doctest", "-package-env", "-", *doctest_args, *files])
+
+def nix_shell_command(packages, files, doctest_args):
+    return [
+        "nix-shell",
+        "-I", f"nixpkgs={NIXPKGS}",
+        "-p", ghc_expression(packages), "haskellPackages.doctest",
+        "--run", RUN_TEMPLATE.format(doctest=doctest_command(files, doctest_args)),
+    ]
+
+def run(cmd):
+    """Run cmd, streaming its output, and return its exit status."""
+    # Flush our own output first, or it shows up after the subprocess' output.
+    sys.stdout.flush()
+
+    # When running a script, xonsh raises on a non-zero exit status. A failing
+    # doctest is a result rather than an error, so recover the status either way.
+    try:
+        return ![@(cmd)].returncode
+    except subprocess.CalledProcessError as e:
+        return e.returncode
+
+def main(args, doctest_args):
+    packages = BASE_PACKAGES + [p for p in args["--package"] if p not in BASE_PACKAGES]
+    validate_packages(packages)
+
+    files = args["<file>"] or ["."]
+
+    cmd = nix_shell_command(packages, files, doctest_args)
+
+    if args["--dry-run"]:
+        print(shlex.join(cmd))
+        return
+
+    log_info(f"Packages: {', '.join(packages)}")
+    log_info(f"Testing: {', '.join(files)}")
+
+    if run(cmd) == 0:
+        success("doctest")
+    else:
+        error("doctest")
+
+
+if __name__ == "__main__":
+    own_args, doctest_args = split_passthrough(sys.argv[1:])
+
+    arguments = docopt(__doc__.format(program=__file__), argv=own_args, version=f'{os.path.basename(__file__)} v0.1.0')
+
+    try:
+        main(arguments, doctest_args)
+    except KeyboardInterrupt:
+        sys.exit(130)
+
+# vim: ft=python
