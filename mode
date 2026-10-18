@@ -9,12 +9,19 @@ cd "${BASE_DIR}/.." || exit 127
 . helpers.sh
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
-VERSION=0.4.0
+VERSION=0.5.0
 
 : "${DOTFILES:?must point to the dotfiles checkout}"
 readonly CODE_SETTINGS="${DOTFILES}/home/programs/vscode/settings.json"
 readonly ZED_SETTINGS="${DOTFILES}/home/programs/zed/settings.json"
 readonly GHOSTTY_CONFIG="${DOTFILES}/home/programs/ghostty/config"
+
+# What each mode sets, in the order change_to applies it:
+#   theme  caffeine  notifications  opacity  editor-font  terminal-font
+declare -rA MODES=(
+  [chill]="dark   off  on   0.5  18  16"
+  [demo]="light  on   off  1    32  26"
+)
 
 function die() {
   echo "${PROGRAM}: $*" >&2
@@ -33,22 +40,49 @@ function on_error() {
 }
 trap 'on_error "$?" "${LINENO}" "${BASH_COMMAND}"' ERR
 
-# replace_line FILE PREFIX REST
+# require_single_line FILE PREFIX
 #
-# On the single line of FILE that contains PREFIX, keep PREFIX and replace
-# everything after it with REST. Both are taken literally. Fails when the
-# file has zero or several matching lines, so a renamed or duplicated key is
-# reported instead of being silently skipped or clobbered.
-function replace_line() {
+# Fail unless exactly one line of FILE contains PREFIX, taken literally, so
+# a renamed or duplicated key is reported instead of being silently skipped
+# or clobbered.
+function require_single_line() {
   declare -r file="$1"
   declare -r prefix="$2"
-  declare -r rest="$3"
-  declare matches escaped_prefix escaped_rest
+  declare matches
 
   [ -f "${file}" ] || die "${file}: no such file"
 
   matches=$(grep -cF -- "${prefix}" "${file}" || true)
   [ "${matches}" -eq 1 ] || die "${file}: expected exactly one line containing '${prefix}', found ${matches}"
+}
+
+# read_line FILE PREFIX
+#
+# Print what follows PREFIX on the single line of FILE that contains it,
+# without a trailing comma.
+function read_line() {
+  declare -r file="$1"
+  declare -r prefix="$2"
+  declare line
+
+  require_single_line "${file}" "${prefix}"
+
+  line=$(grep -F -- "${prefix}" "${file}")
+  line="${line#*"${prefix}"}"
+  echo "${line%,}"
+}
+
+# replace_line FILE PREFIX REST
+#
+# On the single line of FILE that contains PREFIX, keep PREFIX and replace
+# everything after it with REST. Both are taken literally.
+function replace_line() {
+  declare -r file="$1"
+  declare -r prefix="$2"
+  declare -r rest="$3"
+  declare escaped_prefix escaped_rest
+
+  require_single_line "${file}" "${prefix}"
 
   escaped_prefix=$(printf '%s\n' "${prefix}" | sed 's/[][\.*^$/]/\\&/g')
   escaped_rest=$(printf '%s\n' "${rest}" | sed 's/[\/&]/\\&/g')
@@ -59,15 +93,14 @@ function replace_line() {
 function display_help() {
   cat <<EOF
   $(help_section Usage)
-    ${PROGRAM} [options] (<theme> | <screen>)
-
-  $(help_section Themes)
-    dark
-    light
+    ${PROGRAM} [options] (<screen> | status)
 
   $(help_section Screens)
     chill           Notifications on, caffeine off, default font-size and dark mode
     demo            Notifications off, caffeine on, big font-size and light mode
+
+  $(help_section Commands)
+    status          Show the current mode and the values behind it
 
   $(help_section Options)
     -h, --help      Show this screen.
@@ -84,6 +117,10 @@ function set_notifications() {
   notifications "$1"
 }
 
+function get_editor_font_size() {
+  read_line "${CODE_SETTINGS}" '"editor.fontSize": '
+}
+
 function set_editor_font_size() {
   declare -r size="$1"
 
@@ -91,10 +128,18 @@ function set_editor_font_size() {
   replace_line "${ZED_SETTINGS}" '"buffer_font_size": ' "${size},"
 }
 
+function get_terminal_background_opacity() {
+  read_line "${GHOSTTY_CONFIG}" 'background-opacity = '
+}
+
 function set_terminal_background_opacity() {
   declare -r opacity="$1"
 
   replace_line "${GHOSTTY_CONFIG}" 'background-opacity = ' "${opacity}"
+}
+
+function get_terminal_font_size() {
+  read_line "${GHOSTTY_CONFIG}" 'font-size = '
 }
 
 function set_terminal_font_size() {
@@ -125,29 +170,58 @@ function set_caffeine() {
 }
 
 function change_to() {
-  case $1 in
-    chill)
-      set_theme dark
-      set_caffeine off
-      set_notifications on
-      set_terminal_background_opacity 0.5
-      set_editor_font_size 18
-      set_terminal_font_size 16
-      ;;
+  declare -r mode="$1"
+  declare theme caffeine notifications opacity editor_font terminal_font
 
-    pitch) ;;
+  read -r theme caffeine notifications opacity editor_font terminal_font <<< "${MODES[${mode}]}"
 
-    demo)
-      set_theme light
-      set_caffeine on
-      set_notifications off
-      set_terminal_background_opacity 1
-      set_editor_font_size 32
-      set_terminal_font_size 26
-      ;;
-  esac
+  set_theme "${theme}"
+  set_caffeine "${caffeine}"
+  set_notifications "${notifications}"
+  set_terminal_background_opacity "${opacity}"
+  set_editor_font_size "${editor_font}"
+  set_terminal_font_size "${terminal_font}"
 
-  echo "Changed to mode $1!"
+  echo "Changed to mode ${mode}!"
+}
+
+# current_mode VALUES
+#
+# Print the name of the mode whose settings equal VALUES (the fields of a
+# MODES entry separated by single spaces), or "custom" when none matches.
+function current_mode() {
+  declare -r values="$1"
+  declare name fields
+
+  for name in "${!MODES[@]}"; do
+    read -ra fields <<< "${MODES[${name}]}"
+    if [ "${fields[*]}" = "${values}" ]; then
+      echo "${name}"
+      return
+    fi
+  done
+
+  echo custom
+}
+
+function display_status() {
+  declare theme caffeine notifications opacity editor_font terminal_font
+
+  theme=$(get_theme)
+  caffeine=$(get_caffeine)
+  notifications=$(get_notifications)
+  opacity=$(get_terminal_background_opacity)
+  editor_font=$(get_editor_font_size)
+  terminal_font=$(get_terminal_font_size)
+
+  current_mode "${theme} ${caffeine} ${notifications} ${opacity} ${editor_font} ${terminal_font}"
+  printf '  %-15s%s\n' \
+    theme "${theme}" \
+    caffeine "${caffeine}" \
+    notifications "${notifications}" \
+    opacity "${opacity}" \
+    "editor font" "${editor_font}" \
+    "terminal font" "${terminal_font}"
 }
 
 case ${1:-error} in
@@ -162,10 +236,10 @@ case ${1:-error} in
     ;;
   -k | --keyboard)
     ;;
-  dark | light)
-    theme "$1"
+  status)
+    display_status
     ;;
-  chill | pitch | demo)
+  chill | demo)
     change_to "$1"
     ;;
   *)
