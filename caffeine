@@ -3,7 +3,7 @@
 #! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
 #! nix-shell -i xonsh
 """
-Choose the desktop theme and applications' appearance based on that.
+Toggle the GNOME Caffeine extension to keep the screen from sleeping or locking.
 
 Usage:
   {program} [on | off | status]
