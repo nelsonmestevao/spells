@@ -31,26 +31,21 @@ function display_help() {
 EOF
 }
 
-function set_notifications() {
-  declare -r status="$1"
+function get_notifications() {
+  notifications status
+}
 
-  case $status in
-    on)
-      # dunstctl set-paused true
-      gsettings set org.gnome.desktop.notifications show-banners true
-      ;;
-    off)
-      # dunstctl set-paused false
-      gsettings set org.gnome.desktop.notifications show-banners false
-      ;;
-  esac
+function set_notifications() {
+  notifications "$1"
 }
 
 function set_editor_font_size() {
   declare -r code_settings="$DOTFILES/home/programs/vscode/settings.json"
+  declare -r zed_settings="$DOTFILES/home/programs/zed/settings.json"
   declare -r size="$1"
 
   sed -i -e "s/\"editor.fontSize\": .*/\"editor.fontSize\": ${size},/g" "${code_settings}"
+  sed -i -e "s/\"buffer_font_size\": .*/\"buffer_font_size\": ${size},/g" "${zed_settings}"
 }
 
 function set_terminal_background_opacity() {
@@ -65,11 +60,15 @@ function set_terminal_font_size() {
   declare -r size="$1"
   declare -r ghostty_config="$DOTFILES/home/programs/ghostty/config"
   declare -r code_settings="$DOTFILES/home/programs/vscode/settings.json"
+  declare -r zed_settings="$DOTFILES/home/programs/zed/settings.json"
 
   # sed -i "s/config.font_size =.*/config.font_size = ${size}/g" "${wezterm_config}"
   sed -i "s/font-size =.*/font-size = ${size}/g" "${ghostty_config}"
 
   sed -i -e "s/\"terminal.integrated.fontSize\": .*/\"terminal.integrated.fontSize\": ${size},/g" "${code_settings}"
+  # Only the terminal block has a bare "font_size" key (ui_font_size and
+  # buffer_font_size do not match because of the leading quote).
+  sed -i -e "s/\"font_size\": .*/\"font_size\": ${size},/g" "${zed_settings}"
 }
 
 function get_theme() {
