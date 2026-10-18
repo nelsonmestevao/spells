@@ -2,7 +2,6 @@
 
 VERSION="spells-0.2.2"
 
-tput sgr0
 RED=$(tput setaf 1)
 ORANGE=$(tput setaf 3)
 GREEN=$(tput setaf 2)
