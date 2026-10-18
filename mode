@@ -1,42 +1,50 @@
 #!/usr/bin/env bash
 
 set -Eeuo pipefail
+shopt -s inherit_errexit
 
 BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
-cd "${BASE_DIR}/.." || exit 127
 
 # shellcheck source=./helpers.sh
-. helpers.sh
+. "${BASE_DIR}/helpers.sh"
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
-VERSION=0.5.0
+VERSION=0.5.1
 
 : "${DOTFILES:?must point to the dotfiles checkout}"
 readonly CODE_SETTINGS="${DOTFILES}/home/programs/vscode/settings.json"
 readonly ZED_SETTINGS="${DOTFILES}/home/programs/zed/settings.json"
 readonly GHOSTTY_CONFIG="${DOTFILES}/home/programs/ghostty/config"
 
-# What each mode sets, in the order change_to applies it:
-#   theme  caffeine  notifications  opacity  editor-font  terminal-font
+# The settings a mode controls, in the order change_to applies them. Each
+# has a get_<name> and set_<name> function, and each MODES entry lists one
+# value per setting, in this same order.
+declare -ra SETTINGS=(theme caffeine notifications opacity editor_font_size terminal_font_size)
 declare -rA MODES=(
-  [chill]="dark   off  on   0.5  18  16"
-  [demo]="light  on   off  1    32  26"
+    [chill]="dark   off  on   0.5  18  16"
+    [demo]="light  on   off  1    32  26"
 )
 
 function die() {
-  echo "${PROGRAM}: $*" >&2
-  exit 1
+    echo "${PROGRAM}: $*" >&2
+    exit 1
 }
 
-# With set -E this fires inside functions too, so an unexpected failure
-# (a missing delegated spell, a sed error, ...) names the command and the
-# line instead of exiting silently. die() bypasses it by calling exit.
+# With set -E this fires inside functions and $(...) too, so an unexpected
+# failure (a missing delegated spell, a sed error, ...) names the command
+# and the line instead of exiting silently. A failure inside $(...) is
+# reported there, and die() prints its own message before exiting, so the
+# assignment that receives either one stays quiet instead of repeating it.
 function on_error() {
-  declare -r status="$1"
-  declare -r line="$2"
-  declare -r command="$3"
+    declare -r status="$1"
+    declare -r line="$2"
+    declare -r command="$3"
 
-  echo "${PROGRAM}: line ${line}: '${command}' failed with exit status ${status}" >&2
+    if [[ ${command} == *=\$\(* ]]; then
+        return
+    fi
+
+    echo "${PROGRAM}: line ${line}: '${command}' failed with exit status ${status}" >&2
 }
 trap 'on_error "$?" "${LINENO}" "${BASH_COMMAND}"' ERR
 
@@ -46,14 +54,14 @@ trap 'on_error "$?" "${LINENO}" "${BASH_COMMAND}"' ERR
 # a renamed or duplicated key is reported instead of being silently skipped
 # or clobbered.
 function require_single_line() {
-  declare -r file="$1"
-  declare -r prefix="$2"
-  declare matches
+    declare -r file="$1"
+    declare -r prefix="$2"
+    declare matches
 
-  [ -f "${file}" ] || die "${file}: no such file"
+    [ -f "${file}" ] || die "${file}: no such file"
 
-  matches=$(grep -cF -- "${prefix}" "${file}" || true)
-  [ "${matches}" -eq 1 ] || die "${file}: expected exactly one line containing '${prefix}', found ${matches}"
+    matches=$(grep -cF -- "${prefix}" "${file}" || true)
+    [ "${matches}" -eq 1 ] || die "${file}: expected exactly one line containing '${prefix}', found ${matches}"
 }
 
 # read_line FILE PREFIX
@@ -61,15 +69,15 @@ function require_single_line() {
 # Print what follows PREFIX on the single line of FILE that contains it,
 # without a trailing comma.
 function read_line() {
-  declare -r file="$1"
-  declare -r prefix="$2"
-  declare line
+    declare -r file="$1"
+    declare -r prefix="$2"
+    declare line
 
-  require_single_line "${file}" "${prefix}"
+    require_single_line "${file}" "${prefix}"
 
-  line=$(grep -F -- "${prefix}" "${file}")
-  line="${line#*"${prefix}"}"
-  echo "${line%,}"
+    line=$(grep -F -- "${prefix}" "${file}")
+    line="${line#*"${prefix}"}"
+    echo "${line%,}"
 }
 
 # replace_line FILE PREFIX REST
@@ -77,21 +85,21 @@ function read_line() {
 # On the single line of FILE that contains PREFIX, keep PREFIX and replace
 # everything after it with REST. Both are taken literally.
 function replace_line() {
-  declare -r file="$1"
-  declare -r prefix="$2"
-  declare -r rest="$3"
-  declare escaped_prefix escaped_rest
+    declare -r file="$1"
+    declare -r prefix="$2"
+    declare -r rest="$3"
+    declare escaped_prefix escaped_rest
 
-  require_single_line "${file}" "${prefix}"
+    require_single_line "${file}" "${prefix}"
 
-  escaped_prefix=$(printf '%s\n' "${prefix}" | sed 's/[][\.*^$/]/\\&/g')
-  escaped_rest=$(printf '%s\n' "${rest}" | sed 's/[\/&]/\\&/g')
+    escaped_prefix=$(printf '%s\n' "${prefix}" | sed 's/[][\.*^$/]/\\&/g')
+    escaped_rest=$(printf '%s\n' "${rest}" | sed 's/[\/&]/\\&/g')
 
-  sed -i -e "s/\(${escaped_prefix}\).*/\1${escaped_rest}/" "${file}"
+    sed -i -e "s/\(${escaped_prefix}\).*/\1${escaped_rest}/" "${file}"
 }
 
 function display_help() {
-  cat <<EOF
+    cat <<EOF
   $(help_section Usage)
     ${PROGRAM} [options] (<screen> | status)
 
@@ -110,139 +118,133 @@ EOF
 }
 
 function get_notifications() {
-  notifications status
+    notifications status
 }
 
 function set_notifications() {
-  notifications "$1"
+    notifications "$1"
 }
 
 function get_editor_font_size() {
-  read_line "${CODE_SETTINGS}" '"editor.fontSize": '
+    read_line "${CODE_SETTINGS}" '"editor.fontSize": '
 }
 
 function set_editor_font_size() {
-  declare -r size="$1"
+    declare -r size="$1"
 
-  replace_line "${CODE_SETTINGS}" '"editor.fontSize": ' "${size},"
-  replace_line "${ZED_SETTINGS}" '"buffer_font_size": ' "${size},"
+    replace_line "${CODE_SETTINGS}" '"editor.fontSize": ' "${size},"
+    replace_line "${ZED_SETTINGS}" '"buffer_font_size": ' "${size},"
 }
 
-function get_terminal_background_opacity() {
-  read_line "${GHOSTTY_CONFIG}" 'background-opacity = '
+function get_opacity() {
+    read_line "${GHOSTTY_CONFIG}" 'background-opacity = '
 }
 
-function set_terminal_background_opacity() {
-  declare -r opacity="$1"
+function set_opacity() {
+    declare -r opacity="$1"
 
-  replace_line "${GHOSTTY_CONFIG}" 'background-opacity = ' "${opacity}"
+    replace_line "${GHOSTTY_CONFIG}" 'background-opacity = ' "${opacity}"
 }
 
 function get_terminal_font_size() {
-  read_line "${GHOSTTY_CONFIG}" 'font-size = '
+    read_line "${GHOSTTY_CONFIG}" 'font-size = '
 }
 
 function set_terminal_font_size() {
-  declare -r size="$1"
+    declare -r size="$1"
 
-  replace_line "${GHOSTTY_CONFIG}" 'font-size = ' "${size}"
-  replace_line "${CODE_SETTINGS}" '"terminal.integrated.fontSize": ' "${size},"
-  # Only the terminal block has a bare "font_size" key; ui_font_size and
-  # buffer_font_size do not match because of the leading quote, and
-  # replace_line fails if that ever stops being true.
-  replace_line "${ZED_SETTINGS}" '"font_size": ' "${size},"
+    replace_line "${GHOSTTY_CONFIG}" 'font-size = ' "${size}"
+    replace_line "${CODE_SETTINGS}" '"terminal.integrated.fontSize": ' "${size},"
+    # Only the terminal block has a bare "font_size" key; ui_font_size and
+    # buffer_font_size do not match because of the leading quote, and
+    # replace_line fails if that ever stops being true.
+    replace_line "${ZED_SETTINGS}" '"font_size": ' "${size},"
 }
 
 function get_theme() {
-  theme status
+    theme status
 }
 
 function set_theme() {
-  theme "$1"
+    theme "$1"
 }
 
 function get_caffeine() {
-  caffeine status
+    caffeine status
 }
 
 function set_caffeine() {
-  caffeine "$1"
+    caffeine "$1"
 }
 
 function change_to() {
-  declare -r mode="$1"
-  declare theme caffeine notifications opacity editor_font terminal_font
+    declare -r mode="$1"
+    declare -a values
+    declare i
 
-  read -r theme caffeine notifications opacity editor_font terminal_font <<< "${MODES[${mode}]}"
+    read -ra values <<<"${MODES[${mode}]}"
+    [ "${#values[@]}" -eq "${#SETTINGS[@]}" ] || die "mode ${mode} has ${#values[@]} values, expected one per setting (${#SETTINGS[@]})"
 
-  set_theme "${theme}"
-  set_caffeine "${caffeine}"
-  set_notifications "${notifications}"
-  set_terminal_background_opacity "${opacity}"
-  set_editor_font_size "${editor_font}"
-  set_terminal_font_size "${terminal_font}"
+    for i in "${!SETTINGS[@]}"; do
+        "set_${SETTINGS[i]}" "${values[i]}"
+    done
 
-  echo "Changed to mode ${mode}!"
+    echo "Changed to mode ${mode}!"
 }
 
-# current_mode VALUES
+# current_mode ACTUAL
 #
-# Print the name of the mode whose settings equal VALUES (the fields of a
+# Print the name of the mode whose settings equal ACTUAL (the fields of a
 # MODES entry separated by single spaces), or "custom" when none matches.
 function current_mode() {
-  declare -r values="$1"
-  declare name fields
+    declare -r actual="$1"
+    declare name fields
 
-  for name in "${!MODES[@]}"; do
-    read -ra fields <<< "${MODES[${name}]}"
-    if [ "${fields[*]}" = "${values}" ]; then
-      echo "${name}"
-      return
-    fi
-  done
+    for name in "${!MODES[@]}"; do
+        read -ra fields <<<"${MODES[${name}]}"
+        if [ "${fields[*]}" = "${actual}" ]; then
+            echo "${name}"
+            return
+        fi
+    done
 
-  echo custom
+    echo custom
 }
 
 function display_status() {
-  declare theme caffeine notifications opacity editor_font terminal_font
+    declare -a values=()
+    declare setting value i
 
-  theme=$(get_theme)
-  caffeine=$(get_caffeine)
-  notifications=$(get_notifications)
-  opacity=$(get_terminal_background_opacity)
-  editor_font=$(get_editor_font_size)
-  terminal_font=$(get_terminal_font_size)
+    for setting in "${SETTINGS[@]}"; do
+        value=$("get_${setting}")
+        values+=("${value}")
+    done
 
-  current_mode "${theme} ${caffeine} ${notifications} ${opacity} ${editor_font} ${terminal_font}"
-  printf '  %-15s%s\n' \
-    theme "${theme}" \
-    caffeine "${caffeine}" \
-    notifications "${notifications}" \
-    opacity "${opacity}" \
-    "editor font" "${editor_font}" \
-    "terminal font" "${terminal_font}"
+    current_mode "${values[*]}"
+    for i in "${!SETTINGS[@]}"; do
+        printf '  %-20s%s\n' "${SETTINGS[i]//_/ }" "${values[i]}"
+    done
 }
 
 case ${1:-error} in
-  -h | --help)
+-h | --help)
     display_help
     ;;
-  -v | --version)
+-v | --version)
     display_version "$PROGRAM" "$VERSION"
     ;;
-  -t | --theme)
+-t | --theme)
     theme status
     ;;
-  -k | --keyboard)
+-k | --keyboard)
     ;;
-  status)
+status)
     display_status
     ;;
-  chill | demo)
+chill | demo)
     change_to "$1"
     ;;
-  *)
+*)
     display_help >&2
     exit 1
     ;;
