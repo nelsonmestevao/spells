@@ -1,25 +1,32 @@
 #!/usr/bin/env bash
 
-# 1. Determine the target
+# Usage:
+#   review                      # commits on this branch since it left main/master,
+#                               # or uncommitted changes when there are none
+#   review <target> [base]      # passed straight to difit (e.g. `review feature main`)
+#   review .                    # uncommitted changes
+
+# 1. Determine the difit arguments
 if [ $# -eq 0 ]; then
-    # Find common ancestor
     BASE=$(git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null)
-    
-    if [ -z "$BASE" ]; then
-        # Fallback to just uncommitted changes if no base is found
-        TARGET=""
+    HEAD_REV=$(git rev-parse HEAD 2>/dev/null)
+
+    if [ -z "$BASE" ] || [ "$BASE" = "$HEAD_REV" ]; then
+        # No base, or nothing committed past it: review uncommitted changes
+        set -- .
+        LABEL="Local Changes"
     else
-        TARGET="$BASE..HEAD"
+        # difit wants `<target> [compare-with]`, not a `base..target` range
+        set -- HEAD "$BASE"
+        LABEL="$BASE..HEAD"
     fi
 else
-    # Join all arguments into one string
-    TARGET="$*"
+    LABEL="$*"
 fi
 
-echo "--- Reviewing: ${TARGET:-"Local Changes"} ---"
+echo "--- Reviewing: $LABEL ---"
 
-# 2. Run via nix-shell with escaped quotes
-# We use printf %q to safely escape the TARGET for the subshell
-SAFE_TARGET=$(printf '%q' "$TARGET")
+# 2. Run via nix-shell, escaping each argument separately for the subshell
+SAFE_ARGS=$(printf '%q ' "$@")
 
-nix-shell -p nodejs --run "npx difit $SAFE_TARGET"
+nix-shell -p nodejs --run "npx difit $SAFE_ARGS"
