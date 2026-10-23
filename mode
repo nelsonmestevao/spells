@@ -21,7 +21,7 @@ readonly GHOSTTY_CONFIG="${DOTFILES}/home/programs/ghostty/config"
 # value per setting, in this same order.
 declare -ra SETTINGS=(theme caffeine notifications opacity editor_font_size terminal_font_size)
 declare -rA MODES=(
-    [chill]="dark   off  on   0.5  18  16"
+    [chill]="dark   off  on   0.6  18  16"
     [demo]="light  on   off  1    32  26"
 )
 
