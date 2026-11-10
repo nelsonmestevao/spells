@@ -1,0 +1,133 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-26.05
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Turn the firewall on or off, so people on the same network can reach this computer.
+
+Turning it off lets anyone on the network reach every open port. It turns
+back on by itself when you reboot.
+
+Usage:
+  {program} [on | off | status]
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+from docopt import docopt
+
+import os
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def fail(msg):
+    error(msg)
+    sys.exit(1)
+
+def execute(title, cmd):
+    if execute_command(title, cmd):
+        success(title)
+        return True
+    else:
+        error(title)
+        return False
+
+def execute_command(title, cmd):
+    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
+
+def log_warn(msg):
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+def log_debug(msg):
+    print(f"{PINK}●{RESET} {msg}")
+
+def pick_status_interactively():
+    return $(gum choose "on" "off").strip()
+
+def systemctl_get_firewall_state():
+    return $(systemctl is-active firewall).strip()
+
+def get_firewall_status():
+    match systemctl_get_firewall_state():
+        case "active":
+            return "on"
+        case "inactive":
+            return "off"
+        case other:
+            return other
+
+def set_firewall(status):
+    match status:
+        case "on":
+            action = "start"
+        case "off":
+            action = "stop"
+        case _:
+            error("no firewall status picked")
+
+    if not ![sudo systemctl @(action) firewall]:
+        error(f"could not turn the firewall {status}")
+
+    success(f"firewall is {status}")
+
+    if status == "off":
+        ip = $(localip).strip()
+        if ip:
+            log_info(f"people on this network can reach you at {ip}")
+        log_warn("the firewall turns back on when you reboot")
+
+def main(args):
+    if args["on"]:
+        set_firewall("on")
+    elif args["off"]:
+        set_firewall("off")
+    elif args["status"]:
+        print(get_firewall_status())
+    else:
+        set_firewall(pick_status_interactively())
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
