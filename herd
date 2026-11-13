@@ -13,6 +13,9 @@ turned into "-". The branch comes from the first of: a local branch,
 Then it switches to the Herdr space open on that folder, or makes a new one
 called <name>. With no <branch>, it fetches and lets you pick one from a list.
 
+On a machine with hc but no herdr-app (a server), it makes the space with hc.
+The space shows up in the Herdr sidebar, but the window won't switch to it.
+
 Usage:
   {program} [<branch>] [options]
   {program} (-h | --help)
@@ -29,7 +32,9 @@ from docopt import docopt
 
 import json
 import os
+import shutil
 import sys
+import uuid
 
 # These are easy to use in bash commands.
 $BLACK=$(tput setaf 0).strip()
@@ -151,14 +156,16 @@ def herdr_spaces():
         error(f"Herdr is not running: {(p.errors or '').strip()}")
     return json.loads(p.output)["spaces"]
 
+def inside(folder, path):
+    """True when folder is path or a folder inside it."""
+    if not folder:
+        return False
+    folder, path = os.path.realpath(folder), os.path.realpath(path)
+    return folder == path or folder.startswith(path + os.sep)
+
 def space_on(spaces, path):
     """The first space whose folder is path or inside it."""
-    path = os.path.realpath(path)
-    for space in spaces:
-        folder = os.path.realpath(space["folder"]) if space.get("folder") else ""
-        if folder == path or folder.startswith(path + os.sep):
-            return space
-    return None
+    return next((space for space in spaces if inside(space.get("folder"), path)), None)
 
 def herdr_do(*args):
     p = !(herdr-app do @(args))
@@ -177,6 +184,40 @@ def open_space(name, path, spaces):
     success(f"Opened space {name}")
     return space_id
 
+def hc_space_on(path):
+    """(space id, place) of a live Herdr terminal in path, or (None, None)."""
+    p = !(hc ls --json)
+    if p.returncode != 0:
+        error(f"hc ls failed: {(p.errors or '').strip()}")
+    for terminal in json.loads(p.output)["terminals"]:
+        if not inside(terminal.get("cwd"), path):
+            continue
+        got = !(hc get @(terminal["address"]))
+        if got.returncode != 0:
+            continue
+        space_id = json.loads(got.output).get("labels", {}).get("herdr.space")
+        if space_id:
+            return space_id, terminal.get("where", space_id)
+    return None, None
+
+def open_space_hc(path):
+    """Find or make the space on path with hc alone. Returns its id.
+
+    Without herdr-app nothing can switch the window to the space. But a shell
+    labeled with a space id Herdr doesn't know becomes a new space, named
+    after its folder.
+    """
+    space_id, where = hc_space_on(path)
+    if space_id:
+        success(f"Already open in space {where}")
+        return space_id
+    space_id = f"sp{uuid.uuid4().hex}"
+    p = !(hc run --bg --no-parent --keep --cwd @(path) --label @(f"herdr.space={space_id}"))
+    if p.returncode != 0:
+        error(f"Could not start a shell for the space: {(p.errors or '').strip()}")
+    success(f"Opened space {os.path.basename(path)}; find it in the Herdr sidebar")
+    return space_id
+
 def run_setup(cmd, path, space_id):
     """Run cmd in its own tab of the space, then leave a shell there."""
     p = !(hc run --bg --no-parent --cwd @(path) --label @(f"herdr.space={space_id}") @(f'{cmd}; exec "${{SHELL:-sh}}"'))
@@ -192,7 +233,11 @@ def main(args):
     if not git("rev-parse", "--git-dir")[0]:
         error("Not inside a git repo")
 
-    spaces = herdr_spaces()
+    # herdr-app only exists where the Herdr window runs. A server has just hc.
+    app = shutil.which("herdr-app") is not None
+    if not app and not shutil.which("hc"):
+        error("herd needs herdr-app or hc on PATH")
+    spaces = herdr_spaces() if app else None
 
     fetched = False
     if not branch:
@@ -218,7 +263,7 @@ def main(args):
             error(f"{path} already exists but is not a worktree for {branch}")
         add_worktree(branch, path, remote, fetched)
 
-    space_id = open_space(name, path, spaces)
+    space_id = open_space(name, path, spaces) if app else open_space_hc(path)
 
     if args["--setup"]:
         run_setup(args["--setup"], path, space_id)
