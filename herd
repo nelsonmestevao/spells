@@ -1,0 +1,232 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-26.05
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Open a Herdr space on a git worktree for a branch, creating the worktree if needed.
+
+If a worktree already has <branch>, it uses that folder. If not, it adds one in
+~/.herdr/worktrees/<project>/<name>, where <name> is the branch with each "/"
+turned into "-". The branch comes from the first of: a local branch,
+<remote>/<branch>, or a new branch made from the remote's default branch.
+
+Then it switches to the Herdr space open on that folder, or makes a new one
+called <name>. With no <branch>, it fetches and lets you pick one from a list.
+
+Usage:
+  {program} [<branch>] [options]
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+  -r --remote=<remote>   Remote to look for branches in [default: origin].
+  -s --setup=<cmd>       Run <cmd> in a new tab of the space (stays open after).
+"""
+
+from docopt import docopt
+
+import json
+import os
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+WORKTREES = os.path.expanduser("~/.herdr/worktrees")
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def execute(title, argv):
+    """Run argv behind a spinner; on failure, show its output and stop."""
+    if ![gum spin --align=right --title @(f"{title}...") --show-error -- @(argv)]:
+        success(title)
+    else:
+        error(title)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+
+def git(*args):
+    """Run git quietly and return (ok, stdout)."""
+    p = !(git @(args))
+    return p.returncode == 0, p.output.strip()
+
+def has_ref(ref):
+    return git("show-ref", "--verify", "--quiet", ref)[0]
+
+def worktrees():
+    """(path, branch) for each worktree, main one first. branch is None when detached."""
+    entries = []
+    for block in git("worktree", "list", "--porcelain")[1].split("\n\n"):
+        path = branch = None
+        for line in block.splitlines():
+            if line.startswith("worktree "):
+                path = line.removeprefix("worktree ")
+            elif line.startswith("branch refs/heads/"):
+                branch = line.removeprefix("branch refs/heads/")
+        if path:
+            entries.append((path, branch))
+    return entries
+
+def fetch(remote):
+    if ![gum spin --align=right --title @(f"Fetching {remote}...") -- git fetch --quiet @(remote)]:
+        success(f"Fetched {remote}")
+    else:
+        error(f"Could not fetch {remote}")
+
+def default_branch(remote):
+    """The remote's default branch as <remote>/<name>."""
+    ok, ref = git("symbolic-ref", "--short", f"refs/remotes/{remote}/HEAD")
+    if ok:
+        return ref
+    for name in ("main", "master"):
+        if has_ref(f"refs/remotes/{remote}/{name}"):
+            return f"{remote}/{name}"
+    error(f"Could not find the default branch of {remote}")
+
+def pick_branch(remote):
+    """Let the person pick a local or remote branch."""
+    out = git("for-each-ref", "--format=%(refname)", "refs/heads", f"refs/remotes/{remote}")[1]
+    names = []
+    for ref in out.splitlines():
+        if ref == f"refs/remotes/{remote}/HEAD":
+            continue
+        name = ref.removeprefix("refs/heads/").removeprefix(f"refs/remotes/{remote}/")
+        if name not in names:
+            names.append(name)
+    return $(echo @("\n".join(names)) | gum filter --placeholder "Pick a branch...").strip()
+
+def add_worktree(branch, path, remote, fetched):
+    """Add a worktree for branch at path from a local, remote or new branch."""
+    if has_ref(f"refs/heads/{branch}"):
+        execute(f"Adding worktree for {branch}", ["git", "worktree", "add", path, branch])
+        return
+
+    if not fetched:
+        fetch(remote)
+
+    if has_ref(f"refs/remotes/{remote}/{branch}"):
+        execute(f"Adding worktree for {remote}/{branch}",
+                ["git", "worktree", "add", "--track", "-b", branch, path, f"{remote}/{branch}"])
+    else:
+        base = default_branch(remote)
+        execute(f"Adding worktree for new branch {branch} from {base}",
+                ["git", "worktree", "add", "--no-track", "-b", branch, path, base])
+
+
+def herdr_spaces():
+    p = !(herdr-app ls)
+    if p.returncode != 0:
+        error(f"Herdr is not running: {(p.errors or '').strip()}")
+    return json.loads(p.output)["spaces"]
+
+def space_on(spaces, path):
+    """The first space whose folder is path or inside it."""
+    path = os.path.realpath(path)
+    for space in spaces:
+        folder = os.path.realpath(space["folder"]) if space.get("folder") else ""
+        if folder == path or folder.startswith(path + os.sep):
+            return space
+    return None
+
+def herdr_do(*args):
+    p = !(herdr-app do @(args))
+    if p.returncode != 0:
+        error(f"herdr-app do {args[0]} failed: {p.output.strip()} {(p.errors or '').strip()}")
+    return json.loads(p.output)
+
+def open_space(name, path, spaces):
+    """Show the space on path, making it if needed. Returns its id."""
+    space = space_on(spaces, path)
+    if space:
+        herdr_do("space.select", "--id", space["id"])
+        success(f"Switched to space {space['name']}")
+        return space["id"]
+    space_id = herdr_do("space.new", "--name", name, "--folder", path)["space"]
+    success(f"Opened space {name}")
+    return space_id
+
+def run_setup(cmd, path, space_id):
+    """Run cmd in its own tab of the space, then leave a shell there."""
+    p = !(hc run --bg --no-parent --cwd @(path) --label @(f"herdr.space={space_id}") @(f'{cmd}; exec "${{SHELL:-sh}}"'))
+    if p.returncode != 0:
+        error(f"Could not start setup: {(p.errors or '').strip()}")
+    success(f"Started setup: {cmd}")
+
+
+def main(args):
+    remote = args["--remote"]
+    branch = args["<branch>"]
+
+    if not git("rev-parse", "--git-dir")[0]:
+        error("Not inside a git repo")
+
+    spaces = herdr_spaces()
+
+    fetched = False
+    if not branch:
+        fetch(remote)
+        fetched = True
+        branch = pick_branch(remote)
+        if not branch:
+            sys.exit(1)
+
+    trees = worktrees()
+    project = os.path.basename(trees[0][0])
+    name = branch.replace("/", "-")
+    path = next((p for p, b in trees if b == branch), None)
+
+    if path and not os.path.isdir(path):
+        error(f"{branch} is checked out in {path}, but that folder is gone. Run: git worktree prune")
+
+    if path:
+        log_info(f"{branch} is already checked out in {path}")
+    else:
+        path = os.path.join(WORKTREES, project, name)
+        if os.path.exists(path):
+            error(f"{path} already exists but is not a worktree for {branch}")
+        add_worktree(branch, path, remote, fetched)
+
+    space_id = open_space(name, path, spaces)
+
+    if args["--setup"]:
+        run_setup(args["--setup"], path, space_id)
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
