@@ -1,0 +1,147 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-26.05
+#! nix-shell -p gum libjxl python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Convert a JPEG file, or all JPEG files in a folder, to JPEG XL, using libjxl.
+
+The conversion is lossless: `djxl file.jxl file.jpg` gives back the exact
+original JPEG, byte for byte.
+
+Usage:
+  {program} <src> [<dest>] [--force]
+  {program} (-h | --help)
+  {program} --version
+
+Arguments:
+  <src>                  A .jpg/.jpeg file, or a folder with them.
+  <dest>                 Folder for the .jxl files (created if missing).
+                         Defaults to the folder the JPEGs are in.
+
+Options:
+  -f --force             Overwrite .jxl files that already exist.
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+from docopt import docopt
+
+import os
+import sys
+
+# These are easy to use in bash commands.
+$BLACK=$(tput setaf 0).strip()
+$RED=$(tput setaf 1).strip()
+$GREEN=$(tput setaf 2).strip()
+$YELLOW=$(tput setaf 3).strip()
+$BLUE=$(tput setaf 4).strip()
+$MAGENTA=$(tput setaf 5).strip()
+$CYAN=$(tput setaf 6).strip()
+$WHITE=$(tput setaf 7).strip()
+$PINK=$(tput setaf 13).strip()
+$RESET=$(tput sgr0).strip()
+
+# These are easy to use in python commands.
+BLACK=$(tput setaf 0).strip()
+RED=$(tput setaf 1).strip()
+GREEN=$(tput setaf 2).strip()
+YELLOW=$(tput setaf 3).strip()
+BLUE=$(tput setaf 4).strip()
+MAGENTA=$(tput setaf 5).strip()
+CYAN=$(tput setaf 6).strip()
+WHITE=$(tput setaf 7).strip()
+PINK=$(tput setaf 13).strip()
+RESET=$(tput sgr0).strip()
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+def fail(msg):
+    error(msg)
+    sys.exit(1)
+
+def execute(title, cmd):
+    if execute_command(title, cmd):
+        success(title)
+        return True
+    else:
+        error(title)
+        return False
+
+def execute_command(title, cmd):
+    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
+
+def log_warn(msg):
+    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
+
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
+
+def log_debug(msg):
+    print(f"{PINK}●{RESET} {msg}")
+
+JPEG_EXTENSIONS = (".jpg", ".jpeg")
+
+
+def convert(title, src, dest):
+    # Paths go in as separate args, so names with spaces are safe.
+    return ![gum spin --align=right --title @(f"{title}...") --show-error -- cjxl --quiet --lossless_jpeg=1 @(src) @(dest)]
+
+def find_sources(src):
+    if os.path.isfile(src):
+        if not src.lower().endswith(JPEG_EXTENSIONS):
+            error(f"'{src}' is not a .jpg/.jpeg file.")
+        return [src]
+
+    if os.path.isdir(src):
+        names = sorted(f for f in os.listdir(src) if f.lower().endswith(JPEG_EXTENSIONS))
+        if not names:
+            error(f"No JPEG files in '{src}'.")
+        return [os.path.join(src, name) for name in names]
+
+    error(f"'{src}' not found.")
+
+def main(args):
+    src = args["<src>"]
+    sources = find_sources(src)
+    dest_dir = args["<dest>"] or (src if os.path.isdir(src) else os.path.dirname(src) or ".")
+
+    os.makedirs(dest_dir, exist_ok=True)
+
+    converted, skipped, failed = 0, 0, []
+
+    for i, src in enumerate(sources, 1):
+        name = os.path.basename(src)
+        dest = os.path.join(dest_dir, os.path.splitext(name)[0] + ".jxl")
+        title = f"[{i}/{len(sources)}] {name}"
+
+        if os.path.exists(dest) and not args["--force"]:
+            skipped += 1
+            continue
+
+        if convert(title, src, dest):
+            converted += 1
+            success(title)
+        else:
+            failed.append(name)
+            if os.path.exists(dest):
+                os.remove(dest)
+            log_warn(f"{title} failed")
+
+    log_info(f"{converted} converted, {skipped} skipped, {len(failed)} failed")
+
+    if failed:
+        error("Some files failed: " + ", ".join(failed))
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
