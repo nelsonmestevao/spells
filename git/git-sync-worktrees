@@ -14,7 +14,8 @@ Options:
   -h --help              Show this screen.
   -v --version           Show version.
   -r --remote=<remote>   Remote repository [default: origin].
-  -b --branch=<branch>   Branch to sync [default: main].
+  -b --branch=<branch>   Branch to sync with.
+                         Without it: the remote's default branch.
 
 Needs from your system:
   git.
@@ -74,9 +75,22 @@ def list_worktrees():
             worktrees.append((path, branch))
     return worktrees
 
+def default_branch(remote):
+    """The remote's default branch: what its HEAD points at, or main, or master."""
+    head = !(git symbolic-ref --short @(f"refs/remotes/{remote}/HEAD"))
+    if head.returncode == 0:
+        return head.out.strip().removeprefix(f"{remote}/")
+
+    # A repo that was not cloned has no <remote>/HEAD. Look for the branch itself.
+    for name in ("main", "master"):
+        for ref in (f"refs/remotes/{remote}/{name}", f"refs/heads/{name}"):
+            if !(git show-ref --verify --quiet @(ref)).returncode == 0:
+                return name
+    return "main"
+
 def main(args):
     remote = args["--remote"]
-    remote_branch = args["--branch"]
+    remote_branch = args["--branch"] or default_branch(remote)
 
     execute(f"Fetching from {remote}", f"git fetch {remote}")
 

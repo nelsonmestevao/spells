@@ -181,6 +181,17 @@ expect "https://diff.hex.pm/diff/jason/1.4.1..1.4.4" in_dir hex hexdiff
 expect "Could not compare mix.lock with 'nope'" in_dir hex hexdiff nope
 expect "No mix.lock found" hexdiff
 
+# With no base given, it compares with the repo's default branch.
+git init --quiet --initial-branch master hex-on-master
+# shellcheck disable=SC2059
+printf "$lock_line" 1.4.1 >hex-on-master/mix.lock
+in_dir hex-on-master git add mix.lock
+in_dir hex-on-master git commit --quiet --message "add mix.lock"
+# shellcheck disable=SC2059
+printf "$lock_line" 1.4.4 >hex-on-master/mix.lock
+
+expect "https://diff.hex.pm/diff/jason/1.4.1..1.4.4" in_dir hex-on-master hexdiff
+
 # --- git-rank and git-joke ---------------------------------------------------
 # git-rank only prints when the name written in it is among the authors.
 git init --quiet --initial-branch main rank
@@ -422,6 +433,27 @@ expect "Leave building!" in_dir fire git-fire "save it"
 fire_branch=(git --git-dir=fire-remote.git log -1 --branches="fire-main-*" --name-only --format=%s)
 expect "save it" "${fire_branch[@]}"
 expect "unsaved" "${fire_branch[@]}"
+
+# With no --branch given, both sync with the remote's default branch.
+git init --quiet --bare --initial-branch master sync-on-master.git
+git clone --quiet sync-on-master.git sync-on-master 2>/dev/null
+commit sync-on-master first
+in_dir sync-on-master git push --quiet origin master
+
+in_dir sync-on-master git switch --quiet --create feature
+commit sync-on-master on-feature
+in_dir sync-on-master git push --quiet --set-upstream origin feature
+in_dir sync-on-master git switch --quiet master
+in_dir sync-on-master git worktree add --quiet ../sync-on-master-worktree -b in-worktree
+commit sync-on-master-worktree on-worktree
+in_dir sync-on-master-worktree git push --quiet --set-upstream origin in-worktree
+commit sync-on-master second
+in_dir sync-on-master git push --quiet origin master
+
+expect "Syncing feature ✓" in_dir sync-on-master git-sync-branches
+expect "second" in_dir sync-on-master git log --format=%s -1 origin/feature~1
+expect "Syncing in-worktree ✓" in_dir sync-on-master git-sync-worktrees
+expect "second" in_dir sync-on-master git log --format=%s -1 origin/in-worktree~1
 
 # --- git clean-branches ------------------------------------------------------
 # Merged branches go, also when they live in a worktree. A worktree with work
