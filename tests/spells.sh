@@ -75,7 +75,10 @@ expect "USAGE" yt2mp3 --help
 expect "yt2mp3 v0.1.0" yt2mp3 --version
 expect "unknown option: --nope" yt2mp3 --nope
 
+expect "█" qrcode https://example.com
 expect "https://example.com" qrcode https://example.com
+expect "https://example.com" qrcode https://example.com --large
+expect "Usage:" qrcode
 
 # --- hexdiff -----------------------------------------------------------------
 lock_line='  "jason": {:hex, :jason, "%s", "abc", [:mix], [], "hexpm", "def"},\n'
