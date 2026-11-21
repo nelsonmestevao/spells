@@ -15,6 +15,8 @@ trap 'rm -rf "$TMP"' EXIT
 # The spells of this checkout come first, ahead of any installed copy.
 export PATH=$SPELLS:$SPELLS/git:$PATH
 export STAND_IN_STATE=$TMP
+# Spells that keep notes between runs (caffeine on macOS) keep them here.
+export XDG_STATE_HOME=$TMP/state
 export DOTFILES=$TMP/dotfiles
 # The throwaway repos below must not use your git settings (signing, hooks,
 # aliases). They only need a name to commit with.
@@ -304,6 +306,8 @@ expect "the firewall turns back on when you reboot" with_stand_ins firewall off
 
 expect "caffeine is on" with_stand_ins caffeine on
 expect "on" with_stand_ins caffeine status
+expect "caffeine is off" with_stand_ins caffeine off
+expect "off" with_stand_ins caffeine status
 
 expect "notifications are off" with_stand_ins notifications off
 expect "off" with_stand_ins notifications status
