@@ -1,9 +1,103 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
-#! nix-shell -p pandoc
-#! nix-shell -i sh
+#! nix-shell -p antiword pandoc python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Show Word and OpenDocument text files as HTML.
 
-# cdoc (see document): A script that uses pandoc to cat a .docx/.doc files.
+Reads .docx, .odt and the older .doc files.
 
-# TODO: Receive more than one argument
-pandoc "$1" -tplain -o /dev/stdout
+Usage:
+  {program} <file>...
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+
+Examples:
+  {program} report.docx > report.html
+  {program} report.docx | chtml      # the same document as Markdown
+"""
+
+from docopt import docopt
+from subprocess import CalledProcessError
+
+import os
+import re
+import sys
+import tempfile
+import zipfile
+
+RED="\033[31m"
+RESET="\033[0m"
+
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+EXTENSIONS = (".docx", ".odt", ".doc")
+
+
+def odt_without_header_rows(path, folder):
+    """A copy of the .odt whose table header rows are plain rows.
+
+    LibreOffice puts the first row of a table in <table:table-header-rows>,
+    and pandoc's .odt reader drops every row in there. Without the wrapper,
+    pandoc keeps them.
+    """
+    copy = os.path.join(folder, "document.odt")
+    with zipfile.ZipFile(path) as original, zipfile.ZipFile(copy, "w") as changed:
+        for entry in original.infolist():
+            data = original.read(entry)
+            if entry.filename == "content.xml":
+                data = re.sub(rb"</?table:table-header-rows>", b"", data)
+            changed.writestr(entry, data)
+    return copy
+
+def show_old_word_file(path, folder):
+    # pandoc cannot read the old binary .doc format, so antiword turns it into
+    # DocBook first. It goes through a file, because a pipe would hide
+    # antiword's errors.
+    docbook = os.path.join(folder, "document.xml")
+    antiword -x db @(path) > @(docbook)
+
+    html = $(pandoc --from=docbook --to=html @(docbook))
+
+    # antiword gives every document an empty title. It becomes an empty <h1>.
+    print(html.replace("<h1></h1>\n", "", 1), end="")
+
+def show(path):
+    with tempfile.TemporaryDirectory() as folder:
+        match os.path.splitext(path)[1].lower():
+            case ".docx":
+                pandoc --from=docx --to=html @(path)
+            case ".odt":
+                pandoc --from=odt --to=html @(odt_without_header_rows(path, folder))
+            case ".doc":
+                show_old_word_file(path, folder)
+
+def main(args):
+    paths = args["<file>"]
+
+    for path in paths:
+        if not os.path.isfile(path):
+            error(f"'{path}' not found.")
+        if not path.lower().endswith(EXTENSIONS):
+            error(f"'{path}' is not a .docx, .odt or .doc file.")
+
+    for path in paths:
+        try:
+            show(path)
+        except (CalledProcessError, zipfile.BadZipFile):
+            error(f"Could not read '{path}'.")
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
