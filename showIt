@@ -1,10 +1,17 @@
-#!/usr/bin/env sh
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p neo-cowsay ncurses
+#! nix-shell -i bash
+
+# Show each argument as a cow's speech, one after the other, five times round.
+#
+#   showIt "Ship it" "Then rest"
 
 clear
 
 for _ in {1..5}; do
   for art in "$@"; do
-    cowecho "$art"
+    cowsay --random --aurora --bold "$art"
     sleep 0.8
     clear
   done
