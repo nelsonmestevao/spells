@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Stand-in for pbcopy in tests. Saves what would go to the clipboard in a file,
+# so the tests never touch your real clipboard.
+
+cat >"${STAND_IN_STATE:?}/clipboard"

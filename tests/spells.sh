@@ -147,6 +147,24 @@ expect "lib/app/a.ex,100.0,high" cat coverage/cover/coverage_report.csv
 # --- fulldoctest (only what it would run; the real thing downloads GHC) ------
 expect "haskellPackages.doctest --run" fulldoctest --dry-run -p gloss Demo.hs -- --verbose
 
+# --- git spells built on fzf -------------------------------------------------
+# With --filter, fzf prints what matches and needs no terminal.
+git init --quiet --initial-branch main picks
+for name in apple banana; do
+  in_dir picks touch "$name"
+  in_dir picks git add "$name"
+  in_dir picks git commit --quiet --message "add $name"
+done
+export FZF_DEFAULT_OPTS="--exact --filter=banana"
+
+with_stand_ins in_dir picks git-pick
+expect "$(in_dir picks git log --format=%h -1)" cat "$STAND_IN_STATE/clipboard"
+
+echo change >>picks/banana
+echo change >>picks/apple
+expect "banana" in_dir picks git-review
+unset FZF_DEFAULT_OPTS
+
 # --- spells that change the system, against stand-ins ------------------------
 echo inactive >"$STAND_IN_STATE/systemctl"
 expect "off" with_stand_ins firewall status
