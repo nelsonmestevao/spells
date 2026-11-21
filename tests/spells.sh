@@ -232,6 +232,30 @@ expect "light mode activated" with_stand_ins theme light
 expect "light = true" cat "$DOTFILES/home/programs/git/common.ini"
 expect "light" with_stand_ins theme status
 
+# --- mode --------------------------------------------------------------------
+# mode edits editor and terminal settings under $DOTFILES and calls theme,
+# caffeine and notifications. It gets pretend settings files and the stand-ins.
+mkdir -p "$DOTFILES/home/programs/vscode" "$DOTFILES/home/programs/zed" "$DOTFILES/home/programs/ghostty"
+printf '{\n  "editor.fontSize": 18,\n  "terminal.integrated.fontSize": 16,\n}\n' >"$DOTFILES/home/programs/vscode/settings.json"
+printf '{\n  "buffer_font_size": 18,\n  "terminal": {\n    "font_size": 16,\n  },\n}\n' >"$DOTFILES/home/programs/zed/settings.json"
+printf 'background-opacity = 0.6\nfont-size = 16\n' >"$DOTFILES/home/programs/ghostty/config"
+
+expect "USAGE" mode --help
+expect "mode v0.5.1" mode --version
+expect "Changed to mode demo!" with_stand_ins mode demo
+expect "demo" with_stand_ins mode status
+expect '"editor.fontSize": 32,' cat "$DOTFILES/home/programs/vscode/settings.json"
+expect "font-size = 26" cat "$DOTFILES/home/programs/ghostty/config"
+expect "Changed to mode chill!" with_stand_ins mode chill
+expect "chill" with_stand_ins mode status
+
+# --- bash_color and keygen ---------------------------------------------------
+expect "USAGE" bash_color --help
+expect "bash_color v0.5.0" bash_color --version
+expect " TEST " bash_color 255 0 0
+expect "USAGE" keygen --help
+expect "keygen v0.9.0" keygen --version
+
 # --- git sync-branches and git sync-worktrees --------------------------------
 # A local "remote" with main, and a clone with a branch that is one commit
 # behind. After a sync, the commit under the branch tip must be main's newest.
