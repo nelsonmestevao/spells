@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Stand-in for the macOS caffeinate command in tests. It keeps nothing awake.
+# It only stays alive until it is stopped, as the real one does.
+
+sleep 600 &
+trap 'kill $!' TERM
+wait

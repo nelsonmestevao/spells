@@ -29,6 +29,8 @@ trap 'T kill-server 2>/dev/null; rm -rf "$TMP"' EXIT
 # The spells of this checkout come first, with the stand-ins ahead of them.
 export PATH=$SPELLS/tests/stand-ins:$SPELLS:$SPELLS/git:$PATH
 export STAND_IN_STATE=$TMP
+# Spells that keep notes between runs (caffeine on macOS) keep them here.
+export XDG_STATE_HOME=$TMP/state
 export DOTFILES=$TMP/dotfiles
 export EDITOR=true
 # The throwaway repos below must not use your git settings.
@@ -152,6 +154,7 @@ expect_exit 130
 in_terminal wait:navigate Enter -- caffeine
 expect_exit 0
 expect_on_screen "caffeine is on"
+caffeine off >/dev/null 2>&1
 
 echo active >"$STAND_IN_STATE/systemctl"
 in_terminal wait:navigate Down Enter -- firewall
