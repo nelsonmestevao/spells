@@ -80,6 +80,10 @@ expect "https://example.com" qrcode https://example.com
 expect "https://example.com" qrcode https://example.com --large
 expect "Usage:" qrcode
 
+# --- showIt ------------------------------------------------------------------
+# Five rounds of 0.8 seconds, so this one takes a moment.
+expect "< hello >" env TERM=xterm showIt hello
+
 # --- spl ---------------------------------------------------------------------
 # spl works on the folder it is in, so it gets a folder of its own to change.
 mkdir own
