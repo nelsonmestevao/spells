@@ -1,3 +1,31 @@
-#!/usr/bin/env bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p fzf
+#! nix-shell -i bash
 
-git log --color=always --oneline | fzf --multi --ansi --preview 'git show --color=always {+1}' | cut -d " " -f1 | xsel -ib
+# Pick one or more commits from the log and copy their hashes to the clipboard.
+#
+# Needs from your system: git, and a clipboard tool (wl-copy, pbcopy or xsel).
+
+# Copy what comes in to the clipboard, with the tool this system has.
+to_clipboard() {
+  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-copy >/dev/null; then
+    wl-copy
+  elif command -v pbcopy >/dev/null; then
+    pbcopy
+  elif command -v xsel >/dev/null; then
+    xsel --input --clipboard
+  else
+    echo "git-pick: found no clipboard tool (wl-copy, pbcopy or xsel)" >&2
+    return 1
+  fi
+}
+
+hashes=$(git log --color=always --oneline |
+  fzf --multi --ansi --preview 'git show --color=always {+1}' |
+  cut -d " " -f1)
+
+# Nothing picked: leave the clipboard as it is.
+[[ -n $hashes ]] || exit 1
+
+echo "$hashes" | to_clipboard
