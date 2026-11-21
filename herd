@@ -29,11 +29,11 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import json
 import os
 import shutil
-import subprocess
 import sys
 import uuid
 
@@ -133,7 +133,7 @@ def pick_branch(remote):
             names.append(name)
     try:
         return $(echo @("\n".join(names)) | gum filter --placeholder "Pick a branch...").strip()
-    except subprocess.CalledProcessError as cancelled:
+    except CalledProcessError as cancelled:
         sys.exit(cancelled.returncode)
 
 def add_worktree(branch, path, remote, fetched):

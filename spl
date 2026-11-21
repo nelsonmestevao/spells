@@ -22,9 +22,9 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
-import subprocess
 import sys
 
 # These are easy to use in bash commands.
@@ -171,7 +171,7 @@ def ask(*gum_args):
     """Run a gum prompt and return the answer. Stop quietly if it is cancelled."""
     try:
         return $(gum @(gum_args)).strip()
-    except subprocess.CalledProcessError as cancelled:
+    except CalledProcessError as cancelled:
         sys.exit(cancelled.returncode)
 
 def pick_spell_name():

@@ -16,9 +16,9 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
-import subprocess
 import sys
 
 $RED="\033[1;31m"
@@ -32,7 +32,7 @@ $RESET="\033[0m"
 def pick_status_interactively():
   try:
     return $(gum choose "on" "off").strip()
-  except subprocess.CalledProcessError as cancelled:
+  except CalledProcessError as cancelled:
     sys.exit(cancelled.returncode)
 
 def gsettings_get_caffeine_status():

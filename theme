@@ -16,9 +16,9 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
-import subprocess
 import sys
 
 $RED="\033[1;31m"
@@ -35,7 +35,7 @@ GIT_CONFIG   = f"{DOTFILES}/home/programs/git/common.ini"
 def pick_theme_interactively():
   try:
     return $(gum choose "dark" "light").strip()
-  except subprocess.CalledProcessError as cancelled:
+  except CalledProcessError as cancelled:
     sys.exit(cancelled.returncode)
 
 def gsettings_get_color_scheme():

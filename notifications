@@ -16,9 +16,9 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
-import subprocess
 import sys
 
 # These are easy to use in bash commands.
@@ -80,7 +80,7 @@ def log_debug(msg):
 def pick_status_interactively():
     try:
         return $(gum choose "on" "off").strip()
-    except subprocess.CalledProcessError as cancelled:
+    except CalledProcessError as cancelled:
         sys.exit(cancelled.returncode)
 
 def gsettings_get_show_banners():

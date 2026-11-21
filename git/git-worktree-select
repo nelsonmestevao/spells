@@ -16,10 +16,10 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
 import re
-import subprocess
 import sys
 
 # These are easy to use in bash commands.
@@ -86,7 +86,7 @@ def main(args):
     display = "\n".join(entries)
     try:
         selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
-    except subprocess.CalledProcessError as cancelled:
+    except CalledProcessError as cancelled:
         sys.exit(cancelled.returncode)
 
     if not selected:
