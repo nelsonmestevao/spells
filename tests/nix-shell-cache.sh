@@ -128,6 +128,43 @@ out=$(PYTHONPATH=$TMP/mine "$TMP/py" 2>/dev/null)
 check "python: second run does too" "docopt docopt and mine" "$out"
 check "python: second run does not ask the real nix-shell" 1 "$(calls)"
 
+# --- more than one copy of the wrapper on PATH -----------------------------
+# This happens when a second checkout is on PATH, or when these tests run
+# while the wrapper is already installed. Two copies must never take each
+# other for the real nix-shell, or they call each other forever.
+with_time_limit() { # with_time_limit <seconds> <command...>
+  local limit=$1 status
+  shift
+  "$@" &
+  local command=$!
+  (sleep "$limit" && kill "$command" 2>/dev/null) &
+  local watchdog=$!
+  wait "$command"
+  status=$?
+  kill "$watchdog" 2>/dev/null
+  return $status
+}
+
+mkdir "$TMP/copy" "$TMP/other-copy"
+cp "$SPELLS/shims/nix-shell" "$TMP/copy/nix-shell"
+cp "$SPELLS/shims/nix-shell" "$TMP/other-copy/nix-shell"
+new_script twice "pv" bash 'echo "ran once"'
+
+# NIX_SHELL_CACHE=off makes every wrapper hand over to what it thinks is real.
+out=$(PATH=$TMP/copy:$PATH NIX_SHELL_CACHE=off with_time_limit 60 "$TMP/twice" 2>/dev/null)
+check "a copy earlier on PATH: the script still runs" "ran once" "$out"
+
+out=$(PATH=$SPELLS/shims:$TMP/copy:$PATH NIX_SHELL_CACHE=off with_time_limit 60 "$TMP/twice" 2>/dev/null)
+check "a copy later on PATH: the script still runs" "ran once" "$out"
+
+# A spy that hands over to a copy, the way these tests do on a machine that
+# has the wrapper installed.
+mkdir "$TMP/spy-to-copy"
+printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$TMP/other-copy/nix-shell" >"$TMP/spy-to-copy/nix-shell"
+chmod +x "$TMP/spy-to-copy/nix-shell"
+out=$(PATH=$SPELLS/shims:$TMP/spy-to-copy:$TMP/other-copy:$PATH NIX_SHELL_CACHE=off with_time_limit 60 "$TMP/twice" 2>/dev/null)
+check "a spy that calls a copy: the script still runs" "ran once" "$out"
+
 # --- the bash that macOS ships ---------------------------------------------
 if [[ $(/bin/bash -c 'echo ${BASH_VERSINFO[0]}') == 3 ]]; then
   : >"$TMP/calls"
