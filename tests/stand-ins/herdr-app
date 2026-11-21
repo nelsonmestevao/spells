@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Stand-in for herdr-app in tests. Says that no space is open.
+
+case $1 in
+  ls) echo '{"spaces": []}' ;;
+  *) echo '{}' ;;
+esac
