@@ -4,15 +4,23 @@ show_help() {
 	cat <<'EOF'
 Usage: forall [--parallel|-p] [--jobs N] -- <command...>
 
-Run <command> in each immediate subdirectory.
+Run <command> in each folder right under this one. Hidden folders, such as
+.git, are skipped.
+
+Give the command as words to keep their quotes, or as one quoted string to use
+pipes and &&.
 
 Options:
   -p, --parallel        Run commands in parallel across directories
       --jobs N          When parallel, allow up to N concurrent jobs (default: number of CPU cores)
   -h, --help            Show this help
 
+Exits with the status of the last command that failed, or 0 if none did.
+
 Examples:
   forall -- git status
+  forall -- git commit -m "two words"
+  forall -- 'git fetch && git status --short'
   forall -p --jobs 4 -- make test
 EOF
 }
@@ -27,6 +35,10 @@ while [[ $# -gt 0 ]]; do
 		shift
 		;;
 	--jobs)
+		if [[ $# -lt 2 ]]; then
+			echo "--jobs needs a number" >&2
+			exit 2
+		fi
 		JOBS="$2"
 		shift 2
 		;;
@@ -59,16 +71,34 @@ if [[ $# -eq 0 ]]; then
 	exit 2
 fi
 
-CMD="$*"
+# One argument is shell code, so it can hold pipes and &&. More arguments are
+# words, and each one keeps its quotes.
+if [[ $# -eq 1 ]]; then
+	CMD=$1
+else
+	CMD=$(printf '%q ' "$@")
+fi
+
+# The folders right under this one, without the hidden ones. Read into a list
+# up front, so the commands keep the terminal as their input.
+DIRS=()
+while IFS= read -r -d '' dir; do
+	DIRS+=("${dir#./}")
+done < <(find . -mindepth 1 -maxdepth 1 -type d ! -name '.*' -print0 | sort -z)
+
+if [[ ${#DIRS[@]} -eq 0 ]]; then
+	echo "forall: no folders here" >&2
+	exit 0
+fi
+
+overall_rc=0
 
 if [[ "$PARALLEL" -ne 1 ]]; then
-	for dir in $(find . -mindepth 1 -maxdepth 1 -type d | sort); do
-		cd "$dir" || exit 1
-		echo -e "\033[32m$(pwd)\033[0m"
-		eval "$CMD"
-		cd ..
+	for dir in "${DIRS[@]}"; do
+		printf '\033[32m%s\033[0m\n' "$PWD/$dir"
+		(cd "$dir" && eval "$CMD") || overall_rc=$?
 	done
-	exit 0
+	exit "$overall_rc"
 fi
 
 if [[ -z "$JOBS" ]]; then
@@ -82,34 +112,25 @@ fi
 
 BASE_TMPDIR=$(mktemp -d "${TMPDIR:-/tmp}/forall.$$.XXXX")
 export BASE_TMPDIR
-trap 'rm -rf "$BASE_TMPDIR"' EXIT INT TERM
+trap 'rm -rf "$BASE_TMPDIR"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-overall_rc=0
-
+# Each job saves its output and exit status under the folder's name, which is
+# unique here. The command runs in a subshell, so an `exit` in it cannot skip
+# the status. A job always exits 0, since xargs stops at a 255.
 (
-	find . -mindepth 1 -maxdepth 1 -type d -print0 |
-		sort -z |
-		xargs -0 -P "$JOBS" -I {} bash -c '
-            dir="$1"
-            if command -v md5sum >/dev/null 2>&1; then
-                h=$(printf "%s" "$dir" | md5sum | cut -d" " -f1)
-            elif command -v sha1sum >/dev/null 2>&1; then
-                h=$(printf "%s" "$dir" | sha1sum | cut -d" " -f1)
-            else
-                h=$(printf "%s" "$dir" | openssl dgst -sha1 | sed "s/^.*= //")
-            fi
-            out="$BASE_TMPDIR/out.$h"
-            status="$BASE_TMPDIR/status.$h"
-            if ! cd "$dir"; then
-                echo "cd failed" >"$out"
-                echo 1 >"$status"
-                exit 1
-            fi
-            eval "$2" >"$out" 2>&1
-            rc=$?
-            echo $rc >"$status"
-            exit $rc
-        ' _ {} "$CMD"
+	# shellcheck disable=SC2016  # the job script expands these itself
+	printf '%s\0' "${DIRS[@]}" |
+		xargs -0 -n 1 -P "$JOBS" bash -c '
+			dir=$2
+			if cd "$dir"; then
+				(eval "$1") >"$BASE_TMPDIR/$dir.out" 2>&1 </dev/null
+			else
+				false
+			fi
+			echo $? >"$BASE_TMPDIR/$dir.status"
+		' _ "$CMD"
 ) &
 
 xargs_pid=$!
@@ -118,11 +139,11 @@ spinner() {
 	local pid=$1
 	local delay=0.12
 	while kill -0 "$pid" 2>/dev/null; do
-		for c in '|' '/' '-' '\'; do
+		for c in '|' '/' '-' "\\"; do
 			if ! kill -0 "$pid" 2>/dev/null; then
 				break 2
 			fi
-			printf "\rRunning \033[32m$CMD\033[0m in parallel [%s]" "$c" >&2
+			printf '\rRunning \033[32m%s\033[0m in parallel [%s]' "$CMD" "$c" >&2
 			sleep $delay
 		done
 	done
@@ -137,28 +158,16 @@ kill "$spinner_pid" 2>/dev/null || true
 wait "$spinner_pid" 2>/dev/null || true
 printf "\r" >&2
 
-while IFS= read -r -d '' dir; do
-	if command -v md5sum >/dev/null 2>&1; then
-		h=$(printf "%s" "$dir" | md5sum | awk '{print $1}')
-	elif command -v sha1sum >/dev/null 2>&1; then
-		h=$(printf "%s" "$dir" | sha1sum | awk '{print $1}')
-	else
-		h=$(printf "%s" "$dir" | openssl dgst -sha1 | awk '{print $2}')
+for dir in "${DIRS[@]}"; do
+	printf '\033[32m%s\033[0m\n' "$PWD/$dir"
+	cat "$BASE_TMPDIR/$dir.out" 2>/dev/null
+	# No status means the job never finished.
+	status=$(cat "$BASE_TMPDIR/$dir.status" 2>/dev/null || echo 1)
+	if [[ "$status" -ne 0 ]]; then
+		overall_rc=$status
 	fi
-	out="$BASE_TMPDIR/out.$h"
-	status="$BASE_TMPDIR/status.$h"
-	printf "\033[32m%s\033[0m\n" "$(cd "$dir" && pwd)"
-	if [[ -f "$out" ]]; then
-		cat "$out"
-	fi
-	if [[ -f "$status" ]]; then
-		v=$(cat "$status" 2>/dev/null || echo 0)
-		if [[ "$v" -ne 0 ]]; then
-			overall_rc=$v
-		fi
-	fi
-done < <(find . -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+done
 
-exit $overall_rc
+exit "$overall_rc"
 
 # vim: ft=shell
