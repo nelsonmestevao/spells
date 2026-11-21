@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Stand-in for the command that opens a page in the browser. Saves the
+# address in a file, so the tests never open your real browser.
+
+echo "$1" >"${STAND_IN_STATE:?}/opened"

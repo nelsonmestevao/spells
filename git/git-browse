@@ -1,48 +1,95 @@
 #!/usr/bin/env bash
+#
+# Open this repo in the browser.
+#
+#   git browse            on the default branch: the repo page
+#                         on any other branch: that branch compared with the default one
+#   git browse --repo     always the repo page
+#   git browse upstream   use another remote (the default is the branch's remote, or origin)
+#
+# Works with GitHub and GitLab. Needs from your system: git, and open or xdg-open.
 
-if [[ $1 == "" ]]; then
-  branch=$(git rev-parse --abbrev-ref HEAD 2 &>/dev/null)
-  remote=$(git config branch."${branch}".remote || echo "origin")
-else
-  remote=$1
+repo_page=false
+remote=
+
+for argument in "$@"; do
+  case $argument in
+    --repo) repo_page=true ;;
+    -h | --help)
+      echo "Usage: git browse [--repo] [<remote>]"
+      exit 0
+      ;;
+    -*)
+      echo "git browse: unknown option $argument" >&2
+      exit 1
+      ;;
+    *) remote=$argument ;;
+  esac
+done
+
+branch=$(git branch --show-current) || exit 1
+
+if [[ -z $remote ]]; then
+  remote=$(git config "branch.$branch.remote" || echo origin)
 fi
 
-if [[ $remote == "" ]]; then
-  echo "Remote not found"
-  exit 1
+remote_url=$(git remote get-url "$remote") || exit 1
+
+# Turn the remote's address into the address of its web page:
+#   git@github.com:you/repo.git             https://github.com/you/repo
+#   ssh://git@gitlab.com/you/repo.git       https://gitlab.com/you/repo
+#   https://token@github.com/you/repo.git   https://github.com/you/repo
+url=$(sed -E \
+  -e 's|\.git$||' \
+  -e 's|^git@([^:]+):|https://\1/|' \
+  -e 's|^ssh://([^@/]+@)?([^:/]+)(:[0-9]+)?/|https://\2/|' \
+  -e 's|^(https?://)[^@/]+@|\1|' <<<"$remote_url")
+
+# The remote's default branch: what its HEAD points at, or main, or master.
+default_branch=$(git symbolic-ref --short "refs/remotes/$remote/HEAD" 2>/dev/null)
+default_branch=${default_branch#"$remote"/}
+if [[ -z $default_branch ]]; then
+  if git show-ref --verify --quiet "refs/remotes/$remote/main"; then
+    default_branch=main
+  else
+    default_branch=master
+  fi
 fi
 
-remote_url=$(git remote get-url $remote)
+# On a branch of its own, show what it changes: the compare page.
+if ! $repo_page && [[ -n $branch && $branch != "$default_branch" ]]; then
+  if ! git show-ref --verify --quiet "refs/remotes/$remote/$branch"; then
+    echo "git browse: $branch is not on $remote yet. Push it first, or use --repo." >&2
+    exit 1
+  fi
 
-if [[ $? -ne 0 ]]; then
-  exit $?
+  case $url in
+    *gitlab*) url="$url/-/compare/$default_branch...$branch" ;;
+    *) url="$url/compare/$default_branch...$branch" ;;
+  esac
 fi
 
-if [[ $remote_url == git@* ]]; then
-  url=$(echo $remote_url | sed -E -e 's/:/\//' -e 's/\.git$//' -e 's/.*@(.*)/http:\/\/\1/')
-elif [[ $remote_url == http* ]]; then
-  url=${remote_url%.git}
-fi
+echo "$url"
 
 case "$OSTYPE" in
   darwin*)
     # MacOS
-    open $url
+    open "$url"
     ;;
   msys)
     # Git-Bash on Windows
-    start $url
+    start "$url"
     ;;
   linux*)
     # Handle WSL on Windows
     if uname -a | grep -i -q Microsoft; then
-      powershell.exe -NoProfile start $url
+      powershell.exe -NoProfile start "$url"
     else
-      xdg-open $url
+      xdg-open "$url"
     fi
     ;;
   *)
     # fall back to xdg-open for BSDs, etc.
-    xdg-open $url
+    xdg-open "$url"
     ;;
 esac

@@ -373,6 +373,29 @@ expect "No such file" ls cleanup-merged
 mkdir not-a-repo
 expect "Must be run in a" in_dir not-a-repo git-branch-manager
 
+# --- git browse --------------------------------------------------------------
+# The stand-ins for open and xdg-open save the address and open no browser.
+git init --quiet --initial-branch main browse
+commit browse first
+# As if a GitHub remote had been fetched.
+in_dir browse git remote add origin git@github.com:you/repo.git
+in_dir browse git update-ref refs/remotes/origin/main HEAD
+in_dir browse git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/main
+
+with_stand_ins in_dir browse git-browse >/dev/null
+expect "https://github.com/you/repo" grep -x "https://github.com/you/repo" "$STAND_IN_STATE/opened"
+
+in_dir browse git switch --quiet --create fix
+expect "fix is not on origin yet" with_stand_ins in_dir browse git-browse
+in_dir browse git update-ref refs/remotes/origin/fix HEAD
+expect "https://github.com/you/repo/compare/main...fix" with_stand_ins in_dir browse git-browse
+
+with_stand_ins in_dir browse git-browse --repo >/dev/null
+expect "https://github.com/you/repo" grep -x "https://github.com/you/repo" "$STAND_IN_STATE/opened"
+
+in_dir browse git remote set-url origin https://gitlab.com/group/repo.git
+expect "https://gitlab.com/group/repo/-/compare/main...fix" with_stand_ins in_dir browse git-browse
+
 # --- serve -------------------------------------------------------------------
 serve 8765 --bind 127.0.0.1 --directory coverage >/dev/null 2>&1 &
 server=$!
