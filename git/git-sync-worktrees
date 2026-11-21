@@ -23,28 +23,11 @@ import os
 import re
 import sys
 
-# These are easy to use in bash commands.
-$BLACK="\033[30m"
-$RED="\033[31m"
-$GREEN="\033[32m"
-$YELLOW="\033[33m"
-$BLUE="\033[34m"
-$MAGENTA="\033[35m"
-$CYAN="\033[36m"
-$WHITE="\033[37m"
-$PINK="\033[95m"
-$RESET="\033[0m"
 
-# These are easy to use in python commands.
-BLACK="\033[30m"
 RED="\033[31m"
 GREEN="\033[32m"
 YELLOW="\033[33m"
 BLUE="\033[34m"
-MAGENTA="\033[35m"
-CYAN="\033[36m"
-WHITE="\033[37m"
-PINK="\033[95m"
 RESET="\033[0m"
 
 
@@ -53,10 +36,6 @@ def success(msg):
 
 def error(msg):
     print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-
-def fail(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-    sys.exit(1)
 
 def execute(title, cmd):
     if execute_command(title, cmd):
@@ -74,9 +53,6 @@ def log_warn(msg):
 
 def log_info(msg):
     print(f"{BLUE}◆{RESET} {msg}")
-
-def log_debug(msg):
-    print(f"{PINK}●{RESET} {msg}")
 
 def list_worktrees():
     """

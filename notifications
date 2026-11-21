@@ -21,61 +21,13 @@ from subprocess import CalledProcessError
 import os
 import sys
 
-# These are easy to use in bash commands.
-$BLACK="\033[30m"
-$RED="\033[31m"
-$GREEN="\033[32m"
-$YELLOW="\033[33m"
-$BLUE="\033[34m"
-$MAGENTA="\033[35m"
-$CYAN="\033[36m"
-$WHITE="\033[37m"
-$PINK="\033[95m"
-$RESET="\033[0m"
 
-# These are easy to use in python commands.
-BLACK="\033[30m"
-RED="\033[31m"
 GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-MAGENTA="\033[35m"
-CYAN="\033[36m"
-WHITE="\033[37m"
-PINK="\033[95m"
 RESET="\033[0m"
 
 
 def success(msg):
     print(f"{msg} {GREEN}✓{RESET}")
-
-def error(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-    sys.exit(1)
-
-def fail(msg):
-    error(msg)
-    sys.exit(1)
-
-def execute(title, cmd):
-    if execute_command(title, cmd):
-        success(title)
-        return True
-    else:
-        error(title)
-        return False
-
-def execute_command(title, cmd):
-    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
-
-def log_warn(msg):
-    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
-
-def log_info(msg):
-    print(f"{BLUE}◆{RESET} {msg}")
-
-def log_debug(msg):
-    print(f"{PINK}●{RESET} {msg}")
 
 def pick_status_interactively():
     try:
