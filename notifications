@@ -15,7 +15,8 @@ Options:
   -v --version           Show version.
 
 Needs from your system:
-  gsettings (GNOME).
+  gsettings (GNOME). macOS has no command for Do Not Disturb, so on a Mac
+  this spell only says that it cannot switch them.
 """
 
 from docopt import docopt, DocoptExit
@@ -25,12 +26,19 @@ import os
 import sys
 
 
+RED="\033[31m"
 GREEN="\033[32m"
 RESET="\033[0m"
+
+MACOS = sys.platform == "darwin"
 
 
 def success(msg):
     print(f"{msg} {GREEN}✓{RESET}")
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
 
 def pick_status_interactively():
     try:
@@ -60,6 +68,11 @@ def set_notifications(status):
     success(f"notifications are {status}")
 
 def main(args):
+    if MACOS:
+        # macOS has no command for Do Not Disturb. The only supported way is
+        # a shortcut made by hand in the Shortcuts app.
+        error("notifications cannot be switched on macOS")
+
     if args["on"]:
         set_notifications("on")
     elif args["off"]:
