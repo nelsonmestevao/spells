@@ -29,8 +29,8 @@ failed=0
 expect() {
   local wanted=$1 output
   shift
-  # Compare without colour codes.
-  output=$("$@" 2>&1 | sed -E $'s/\x1b\\[[0-9;?]*[a-zA-Z]//g; s/\x1b\\(B//g')
+  # Compare without colour codes, and without the NUL bytes `grep -z` adds.
+  output=$("$@" 2>&1 | tr -d '\0' | sed -E $'s/\x1b\\[[0-9;?]*[a-zA-Z]//g; s/\x1b\\(B//g')
   checks=$((checks + 1))
   if [[ $output == *"$wanted"* ]]; then
     echo "ok    $*"
@@ -124,6 +124,21 @@ printf "$lock_line" 1.4.4 >hex/mix.lock
 expect "https://diff.hex.pm/diff/jason/1.4.1..1.4.4" in_dir hex hexdiff
 expect "Could not compare mix.lock with 'nope'" in_dir hex hexdiff nope
 expect "No mix.lock found" hexdiff
+
+# --- git-rank and git-joke ---------------------------------------------------
+# git-rank only prints when the name written in it is among the authors.
+git init --quiet --initial-branch main rank
+for author in "Nelson Estevão" "Nelson Estevão" "Someone Else"; do
+  echo "$author" >>rank/file
+  in_dir rank git add file
+  GIT_AUTHOR_NAME=$author in_dir rank git commit --quiet --message "a line by $author"
+done
+
+expect "2	Nelson Estevão" in_dir rank git-rank
+expect "2 Nelson Estevão" in_dir rank git-rank --by-line
+
+# Every joke has a space in it. This only checks that one arrives.
+expect " " git-joke
 
 # --- jpg2jxl -----------------------------------------------------------------
 mkdir pics
