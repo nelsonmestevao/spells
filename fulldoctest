@@ -1,5 +1,5 @@
 #!/usr/bin/env nix-shell
-#! nix-shell -I nixpkgs=channel:nixos-26.05
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
 #! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
 #! nix-shell -i xonsh
 """
@@ -92,7 +92,7 @@ def log_debug(msg):
 
 
 # Same nixpkgs as the shebang above, so GHC and doctest always match.
-NIXPKGS = "channel:nixos-26.05"
+NIXPKGS = "https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz"
 
 # doctest needs QuickCheck for `prop>` examples (and template-haskell, which
 # every GHC ships with, for the splice doctest generates around them).
