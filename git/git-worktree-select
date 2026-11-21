@@ -16,6 +16,7 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
 import re
@@ -88,7 +89,10 @@ def main(args):
         error("No worktrees found")
 
     display = "\n".join(entries)
-    selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
+    try:
+        selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
+    except CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
 
     if not selected:
         sys.exit(1)

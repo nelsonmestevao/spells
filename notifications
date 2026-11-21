@@ -16,6 +16,7 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
 import sys
@@ -77,7 +78,10 @@ def log_debug(msg):
     print(f"{PINK}●{RESET} {msg}")
 
 def pick_status_interactively():
-    return $(gum choose "on" "off").strip()
+    try:
+        return $(gum choose "on" "off").strip()
+    except CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
 
 def gsettings_get_show_banners():
     return $(gsettings get org.gnome.desktop.notifications show-banners).strip().lower()

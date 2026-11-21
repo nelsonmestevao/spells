@@ -19,6 +19,7 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
 import sys
@@ -80,7 +81,10 @@ def log_debug(msg):
     print(f"{PINK}●{RESET} {msg}")
 
 def pick_status_interactively():
-    return $(gum choose "on" "off").strip()
+    try:
+        return $(gum choose "on" "off").strip()
+    except CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
 
 def systemctl_get_firewall_state():
     return $(systemctl is-active firewall).strip()
