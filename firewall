@@ -22,6 +22,7 @@ from docopt import docopt
 from subprocess import CalledProcessError
 
 import os
+import socket
 import sys
 
 # These are easy to use in bash commands.
@@ -98,6 +99,17 @@ def get_firewall_status():
         case other:
             return other
 
+def local_ip():
+    """This computer's address on the local network, or None when it has none."""
+    # Connecting a UDP socket sends nothing. It only makes the system pick the
+    # network interface, and so the address, that leads out of this computer.
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            s.connect(("192.0.2.1", 9))
+        except OSError:
+            return None
+        return s.getsockname()[0]
+
 def set_firewall(status):
     match status:
         case "on":
@@ -113,7 +125,7 @@ def set_firewall(status):
     success(f"firewall is {status}")
 
     if status == "off":
-        ip = $(localip).strip()
+        ip = local_ip()
         if ip:
             log_info(f"people on this network can reach you at {ip}")
         log_warn("the firewall turns back on when you reboot")
