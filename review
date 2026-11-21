@@ -1,4 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p nodejs
+#! nix-shell -i bash
 
 # Usage:
 #   review                      # commits on this branch since it left main/master,
@@ -26,7 +29,5 @@ fi
 
 echo "--- Reviewing: $LABEL ---"
 
-# 2. Run via nix-shell, escaping each argument separately for the subshell
-SAFE_ARGS=$(printf '%q ' "$@")
-
-nix-shell -p nodejs --run "npx difit $SAFE_ARGS"
+# 2. Run difit. It is not in nixpkgs, so npx fetches it from npm the first time.
+exec npx difit "$@"
