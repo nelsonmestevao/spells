@@ -376,6 +376,22 @@ in_dir clone git push --quiet origin main
 expect "Syncing in-worktree ✓" in_dir clone git-sync-worktrees
 expect "third" in_dir clone git log --format=%s -1 origin/in-worktree~1
 
+# --- git fire ----------------------------------------------------------------
+# It pushes a new branch to every remote, so it gets a remote of its own.
+expect "Usage: git fire" git-fire --help
+expect "git-fire version 0.2.4" git-fire --version
+
+git init --quiet --bare --initial-branch main fire-remote.git
+git clone --quiet fire-remote.git fire 2>/dev/null
+commit fire first
+in_dir fire git push --quiet origin main
+echo "not saved yet" >fire/unsaved
+
+expect "Leave building!" in_dir fire git-fire "save it"
+fire_branch=(git --git-dir=fire-remote.git log -1 --branches="fire-main-*" --name-only --format=%s)
+expect "save it" "${fire_branch[@]}"
+expect "unsaved" "${fire_branch[@]}"
+
 # --- git clean-branches ------------------------------------------------------
 # Merged branches go, also when they live in a worktree. A worktree with work
 # that is not committed stays, and so does every branch that is not merged.

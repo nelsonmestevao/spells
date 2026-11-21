@@ -1,7 +1,21 @@
 #!/bin/sh
 
-VERSION="0.2.3"
+VERSION="0.2.4"
 BRANCH_PREFIX="fire"
+
+display_help() {
+  cat <<EOF
+Usage: git fire [<message>]
+       git fire (-h | --help)
+       git fire (-V | --version)
+
+In an emergency, save all your work to the remotes. git fire makes a new
+branch, commits every change on it without running hooks, and pushes it to
+every remote. Your stashes go to origin, too.
+
+Needs from your system: git.
+EOF
+}
 
 version() {
   printf "git-fire version %s\n" "$VERSION"
@@ -29,7 +43,7 @@ fire() {
   git checkout -b "$(new_branch)"
 
   # cd to git root directory
-  cd "$(git rev-parse --show-toplevel)"
+  cd "$(git rev-parse --show-toplevel)" || exit 1
 
   git add -A
 
