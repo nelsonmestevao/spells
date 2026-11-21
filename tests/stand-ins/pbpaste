@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stand-in for pbpaste in tests. Prints what the pbcopy stand-in saved.
+
+cat "${STAND_IN_STATE:?}/clipboard"

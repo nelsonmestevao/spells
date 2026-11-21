@@ -47,9 +47,11 @@ in_dir() {
   (cd "$1" && shift && "$@")
 }
 
-# with_stand_ins <command...>: run with the pretend systemctl, sudo and gsettings.
+# with_stand_ins <command...>: run with the pretend systemctl, sudo, gsettings
+# and clipboard. With no WAYLAND_DISPLAY, the clipboard spells skip wl-copy and
+# use the pretend pbcopy, even on a Wayland desktop.
 with_stand_ins() {
-  PATH=$SPELLS/tests/stand-ins:$PATH "$@"
+  WAYLAND_DISPLAY='' PATH=$SPELLS/tests/stand-ins:$PATH "$@"
 }
 
 # first_line <command...>: only the first line the command prints, errors included.
@@ -247,6 +249,18 @@ echo change >>picks/banana
 echo change >>picks/apple
 expect "banana" in_dir picks git-review
 unset FZF_DEFAULT_OPTS
+
+# --- clip --------------------------------------------------------------------
+# It copies what comes in. With nothing coming in, it prints the clipboard.
+echo "from a pipe" | with_stand_ins clip
+expect "from a pipe" cat "$STAND_IN_STATE/clipboard"
+expect "from a pipe" with_stand_ins clip </dev/null
+
+echo "from a file" >clip.txt
+with_stand_ins clip <clip.txt
+expect "from a file" with_stand_ins clip </dev/null
+
+expect "Usage:" clip nope </dev/null
 
 # --- spells that change the system, against stand-ins ------------------------
 echo inactive >"$STAND_IN_STATE/systemctl"
