@@ -1,0 +1,64 @@
+name: bump nixpkgs
+
+# Every Monday: move the spells to the newest nixpkgs-unstable commit and open
+# a pull request. The tests run on that branch, so an update that breaks a
+# spell shows up before it is merged.
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write # to start the tests on the new branch
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+
+      - name: Note the commit the spells use now
+        id: before
+        run: echo "revision=$(grep -oE '[0-9a-f]{40}' cowecho)" >>"$GITHUB_OUTPUT"
+
+      - name: Move every spell to the newest commit
+        run: ./spl bump
+
+      - name: Note the commit the spells use after
+        id: after
+        run: echo "revision=$(grep -oE '[0-9a-f]{40}' cowecho)" >>"$GITHUB_OUTPUT"
+
+      - name: Open or update the pull request
+        if: steps.before.outputs.revision != steps.after.outputs.revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OLD: ${{ steps.before.outputs.revision }}
+          NEW: ${{ steps.after.outputs.revision }}
+        run: |
+          title="chore: bump nixpkgs to ${NEW:0:12}"
+          body="Moves every spell from nixpkgs \`${OLD:0:12}\` to \`${NEW:0:12}\`, the newest \`nixpkgs-unstable\` commit.
+
+          [What changed in nixpkgs](https://github.com/NixOS/nixpkgs/compare/${OLD}...${NEW})
+
+          The tests run on this branch. Merge when they pass."
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --force-create bump-nixpkgs
+          git commit --all --message "$title"
+          # One branch for every bump: a newer bump replaces an unmerged older one.
+          git push --force origin bump-nixpkgs
+
+          if [[ $(gh pr view bump-nixpkgs --json state --jq .state 2>/dev/null) == OPEN ]]; then
+            gh pr edit bump-nixpkgs --title "$title" --body "$body"
+          else
+            gh pr create --base master --head bump-nixpkgs --title "$title" --body "$body"
+          fi
+
+          # A pull request opened by a workflow does not start other workflows,
+          # so start the tests by hand.
+          gh workflow run tests.yml --ref bump-nixpkgs

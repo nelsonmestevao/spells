@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [master]
+  workflow_dispatch: # the bump workflow starts the tests this way
 
 permissions:
   contents: read
