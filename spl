@@ -24,7 +24,7 @@ Options:
   -d --description=<desc>      Short description of the spell.
 
 Needs from your system:
-  $EDITOR set to your editor.
+  git, and $EDITOR set to your editor.
 """
 
 from docopt import docopt
