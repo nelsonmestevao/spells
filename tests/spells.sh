@@ -313,6 +313,9 @@ printf '[delta]\n    light = false\n' >"$DOTFILES/home/programs/git/common.ini"
 expect "light mode activated" with_stand_ins theme light
 expect "light = true" cat "$DOTFILES/home/programs/git/common.ini"
 expect "light" with_stand_ins theme status
+expect "dark mode activated" with_stand_ins theme dark
+expect "light = false" cat "$DOTFILES/home/programs/git/common.ini"
+expect "dark" with_stand_ins theme status
 
 # --- mode --------------------------------------------------------------------
 # mode edits editor and terminal settings under $DOTFILES and calls theme,

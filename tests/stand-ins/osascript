@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Stand-in for osascript in tests. Understands the one script the theme spell
+# sends: "... set dark mode to true" or "... to false".
+
+case "$*" in
+  *"set dark mode to true"*) echo true >"${STAND_IN_STATE:?}/macos-dark-mode" ;;
+  *"set dark mode to false"*) echo false >"${STAND_IN_STATE:?}/macos-dark-mode" ;;
+  *)
+    echo "stand-in osascript: unknown script: $*" >&2
+    exit 1
+    ;;
+esac
