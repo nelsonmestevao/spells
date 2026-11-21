@@ -91,4 +91,5 @@ tests/run
 ```
 
 This runs every script in `tests/`. GitHub Actions runs the same command on
-Linux and macOS for every pull request.
+Linux and macOS for every pull request, once as it is and once through
+`shims/nix-shell`.
