@@ -187,6 +187,10 @@ in_dir clone git push --quiet origin main
 expect "Syncing in-worktree ✓" in_dir clone git-sync-worktrees
 expect "third" in_dir clone git log --format=%s -1 origin/in-worktree~1
 
+# --- git spells that ask questions (only the part that needs no terminal) ----
+mkdir not-a-repo
+expect "Must be run in a" in_dir not-a-repo git-branch-manager
+
 # --- serve -------------------------------------------------------------------
 serve 8765 --bind 127.0.0.1 --directory coverage >/dev/null 2>&1 &
 server=$!
