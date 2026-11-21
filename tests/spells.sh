@@ -369,6 +369,15 @@ expect $'main\nmerged-with-work\nunmerged' in_dir cleanup git branch --format='%
 expect "not-committed" ls cleanup-with-work
 expect "No such file" ls cleanup-merged
 
+# With no branch given, it compares against the remote's default branch.
+git init --quiet --bare --initial-branch master on-master.git
+git clone --quiet on-master.git on-master 2>/dev/null
+commit on-master base
+in_dir on-master git push --quiet origin master
+in_dir on-master git branch merged
+
+expect "Deleting merged branch: merged" in_dir on-master git-clean-branches
+
 # --- git spells that ask questions (only the part that needs no terminal) ----
 mkdir not-a-repo
 expect "Must be run in a" in_dir not-a-repo git-branch-manager

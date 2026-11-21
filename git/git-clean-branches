@@ -3,7 +3,7 @@ set -euo pipefail
 
 dry_run=false
 remote=false
-main_branch="main"
+main_branch=
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -14,7 +14,8 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "  --dry-run, -n   Preview deletions without executing them"
       echo "  --remote, -r    Also delete merged remote branches"
-      echo "  branch          Main branch to compare against (default: main)"
+      echo "  branch          Main branch to compare against (default: the remote's"
+      echo "                  default branch, or main, or master)"
       exit 0
       ;;
     -*) echo "Unknown option: $1" >&2; exit 1 ;;
@@ -23,6 +24,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 current_branch=$(git branch --show-current 2>/dev/null || echo "")
+
+# With no branch given, compare against the remote's default branch: what
+# origin/HEAD points at. A repo that was not cloned has no origin/HEAD, so
+# fall back to main, or to master.
+if [[ -z $main_branch ]]; then
+  main_branch=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null || true)
+  main_branch=${main_branch#origin/}
+fi
+if [[ -z $main_branch ]]; then
+  if git show-ref --verify --quiet refs/heads/main; then
+    main_branch=main
+  else
+    main_branch=master
+  fi
+fi
 
 run() {
   if $dry_run; then
