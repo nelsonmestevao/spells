@@ -3,4 +3,23 @@
 #! nix-shell -p curl bash
 #! nix-shell -i bash
 
-curl -sL https://channels.nixos.org/nixos-$1/git-revision
+# Print the git revision a NixOS channel points at.
+#
+#   get_nix_channel_revision 26.05
+#   get_nix_channel_revision unstable
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $(basename "$0") <release>   (for example 26.05 or unstable)" >&2
+  exit 1
+fi
+
+CHANNEL="nixos-$1"
+
+if ! REVISION=$(curl --silent --fail --location "https://channels.nixos.org/${CHANNEL}/git-revision"); then
+  echo "Could not find the channel ${CHANNEL}" >&2
+  exit 1
+fi
+
+echo "$REVISION"
