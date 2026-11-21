@@ -15,7 +15,7 @@ Options:
   -v --version           Show version.
 
 Needs from your system:
-  gsettings (GNOME), and $DOTFILES set to your dotfiles folder.
+  GNOME (gsettings) or macOS, and $DOTFILES set to your dotfiles folder.
 """
 
 from docopt import docopt, DocoptExit
@@ -31,6 +31,7 @@ $RESET="\033[0m"
 
 DOTFILES     = os.path.expandvars("$DOTFILES")
 GIT_CONFIG   = f"{DOTFILES}/home/programs/git/common.ini"
+MACOS        = sys.platform == "darwin"
 
 def pick_theme_interactively():
   try:
@@ -41,7 +42,15 @@ def pick_theme_interactively():
 def gsettings_get_color_scheme():
   return $(gsettings get org.gnome.desktop.interface color-scheme).strip().lower()
 
+def macos_is_dark():
+  # The setting holds "Dark" in dark mode. In light mode it does not exist and
+  # `defaults` fails. That is an answer, not an error, so `!()` and not `$()`.
+  return !(defaults read -g AppleInterfaceStyle).out.strip() == "Dark"
+
 def get_current_theme():
+  if MACOS:
+    return "dark" if macos_is_dark() else "light"
+
   match gsettings_get_color_scheme():
     case "'prefer-dark'":
         return "dark"
@@ -54,16 +63,22 @@ def set_theme_to(theme):
   cfg = {
         "dark": {
             "gsettings_scheme": "prefer-dark",
+            "macos_dark_mode":  "true",
             "git_delta_light":  "false"
         },
         "light": {
             "gsettings_scheme": "default",
+            "macos_dark_mode":  "false",
             "git_delta_light":  "true"
         },
     }[theme]
 
   sed -i @(f"s/light =.*/light = {cfg['git_delta_light']}/g") @(GIT_CONFIG)
-  gsettings set org.gnome.desktop.interface color-scheme @(cfg["gsettings_scheme"])
+  if MACOS:
+    # The first time, macOS asks whether this terminal may control System Events.
+    osascript -e @(f'tell application "System Events" to tell appearance preferences to set dark mode to {cfg["macos_dark_mode"]}')
+  else:
+    gsettings set org.gnome.desktop.interface color-scheme @(cfg["gsettings_scheme"])
 
   echo -e @(f"{theme} mode activated") "$GREEN✓$RESET"
 
