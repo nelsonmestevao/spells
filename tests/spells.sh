@@ -65,7 +65,7 @@ cd "$TMP" || exit 1
 # A wrong option must print the usage first, with no xonsh traceback hint
 # above it.
 for spell in caffeine cdoc chtml cpdf cxls excoveralls-report firewall fulldoctest herd \
-  hexdiff jpg2jxl notifications spl theme git-sync-branches git-sync-worktrees \
+  hexdiff jpg2jxl notifications pscpu psmem spl theme git-sync-branches git-sync-worktrees \
   git-worktree-select; do
   expect "Usage:" "$spell" --help
   expect "Usage:" first_line "$spell" --nope
@@ -185,6 +185,31 @@ cp "$SPELLS/tests/fixtures/photo.jpg" "pics/two words.JPEG"
 expect "2 converted, 0 skipped, 0 failed" jpg2jxl pics jxl
 expect "0 converted, 2 skipped, 0 failed" jpg2jxl pics jxl
 expect "is not a .jpg/.jpeg file" jpg2jxl b.txt
+
+# --- pscpu and psmem ---------------------------------------------------------
+# A busy program and a memory-heavy one, each under a name of its own, so the
+# tests can find them in the lists. Both are awk, started through a link with
+# that name. (A copy would not do: macOS refuses to run a copied system program.)
+ln -s "$(command -v awk)" busy-for-the-test
+./busy-for-the-test 'BEGIN { while (1) {} }' &
+busy=$!
+
+# This one fills about 300 MB, then waits on a pipe that nobody writes to.
+ln -s "$(command -v awk)" heavy-for-the-test
+mkfifo never-written
+./heavy-for-the-test 'BEGIN { while (i++ < 2000000) held[i] = sprintf("%0100d", i); getline line < "never-written" }' &
+heavy=$!
+sleep 4
+
+expect "busy-for-the-test" pscpu -n 5
+expect "busy-for-the-test" pscpu --processes -n 5
+expect "heavy-for-the-test" psmem -n 30
+expect "PROCS  APP" psmem
+expect "USER" psmem --processes -n 3
+expect "-n takes a number" pscpu -n many
+
+kill "$busy" "$heavy" 2>/dev/null
+wait "$busy" "$heavy" 2>/dev/null
 
 # --- review ------------------------------------------------------------------
 # difit comes from npm, so this needs the network. A real review opens a
