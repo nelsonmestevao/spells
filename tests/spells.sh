@@ -93,6 +93,23 @@ expect "https://example.com" qrcode https://example.com
 expect "https://example.com" qrcode https://example.com --large
 expect "Usage:" qrcode
 
+# --- forall ------------------------------------------------------------------
+# Two folders, one with a space in its name, and a hidden one to skip.
+mkdir -p many/one "many/two words" many/.hidden
+
+expect "<a b>" in_dir many forall -- printf "<%s>" "a b"
+expect "many/two words" in_dir many forall -- true
+expect "HI" in_dir many forall -- 'echo hi | tr a-z A-Z'
+in_dir many forall -- touch ran >/dev/null
+expect "skipped .hidden" bash -c '[ -e many/.hidden/ran ] && echo "ran in .hidden" || echo "skipped .hidden"'
+expect "exit 1" bash -c 'cd many && forall -- false >/dev/null; echo "exit $?"'
+# A failure in the first folder must not stop the others.
+expect "many/two words" in_dir many forall -- "exit 3"
+
+expect "<a b>" in_dir many forall -p -- printf "<%s>" "a b"
+expect "exit 3" bash -c 'cd many && forall -p -- "exit 3" >/dev/null 2>&1; echo "exit $?"'
+expect "--jobs needs a number" forall --jobs
+
 # --- showIt ------------------------------------------------------------------
 # Five rounds of 0.8 seconds, so this one takes a moment.
 expect "< hello >" env TERM=xterm showIt hello
