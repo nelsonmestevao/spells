@@ -61,7 +61,12 @@ def log_info(msg):
 
 
 def main(args):
-    output = $(git worktree list 2>&1).strip()
+    listing = !(git worktree list)
+    if listing.returncode != 0:
+        print(listing.errors.strip(), file=sys.stderr)
+        error("Could not list the worktrees")
+
+    output = listing.out.strip()
 
     if not output:
         error("No worktrees found")
