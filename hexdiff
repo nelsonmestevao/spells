@@ -11,7 +11,8 @@ Usage:
   {program} --version
 
 Arguments:
-  base          Base branch or ref to diff against [default: main].
+  base          Base branch or ref to diff against.
+                Without it: the repo's default branch.
 
 Options:
   -h --help              Show this screen.
@@ -58,8 +59,22 @@ def parse_hex_versions(lines):
     return versions
 
 
+def default_branch(remote):
+    """The remote's default branch: what its HEAD points at, or main, or master."""
+    head = !(git symbolic-ref --short @(f"refs/remotes/{remote}/HEAD"))
+    if head.returncode == 0:
+        return head.out.strip().removeprefix(f"{remote}/")
+
+    # A repo that was not cloned has no <remote>/HEAD. Look for the branch itself.
+    for name in ("main", "master"):
+        for ref in (f"refs/remotes/{remote}/{name}", f"refs/heads/{name}"):
+            if !(git show-ref --verify --quiet @(ref)).returncode == 0:
+                return name
+    return "main"
+
+
 def main(args):
-    base = args["<base>"] or "main"
+    base = args["<base>"] or default_branch("origin")
 
     # Check we're in a git repo with a mix.lock
     if not os.path.isfile("mix.lock"):
