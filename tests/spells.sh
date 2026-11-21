@@ -311,7 +311,8 @@ expect "USAGE" bash_color --help
 expect "bash_color v0.5.0" bash_color --version
 expect " TEST " bash_color 255 0 0
 expect "USAGE" keygen --help
-expect "keygen v0.9.0" keygen --version
+expect "keygen v1.0.0" keygen --version
+expect "USAGE" keygen nope
 
 # --- git sync-branches and git sync-worktrees --------------------------------
 # A local "remote" with main, and a clone with a branch that is one commit

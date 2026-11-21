@@ -35,6 +35,9 @@ export EDITOR=true
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
 export GIT_AUTHOR_NAME=test GIT_AUTHOR_EMAIL=test@example.com
 export GIT_COMMITTER_NAME=test GIT_COMMITTER_EMAIL=test@example.com
+# With no WAYLAND_DISPLAY, the clipboard spells skip wl-copy and use the
+# pretend pbcopy, even on a Wayland desktop.
+unset WAYLAND_DISPLAY
 
 checks=0
 failed=0
@@ -72,9 +75,12 @@ in_terminal() {
 
   cases=$((cases + 1))
   session=case-$cases
+  # The shell around the command catches Ctrl-C. When a command dies of
+  # Ctrl-C (ssh-keygen does), bash stops too, unless it has its own trap. The
+  # command itself still gets Ctrl-C as usual.
   T start-server \; set-option -g exit-empty off \; set-option -g default-shell "$BASH" \; \
     new-session -d -s "$session" -x 120 -y 40 -c "$PWD" \
-    "$(printf '%q ' "$@"); echo \"[exit status: \$?]\"; sleep 600"
+    "trap : INT; $(printf '%q ' "$@"); echo \"[exit status: \$?]\"; sleep 600"
   local timed_out=
   for step in "${steps[@]}" "wait:[exit status:"; do
     case $step in
@@ -119,6 +125,16 @@ expect_on_screen() {
   fi
 }
 
+# expect_in_file <file> <text>
+expect_in_file() {
+  checks=$((checks + 1))
+  if grep -qF -- "$2" "$1" 2>/dev/null; then
+    echo "ok    $last_case -> $(basename "$1") has \"$2\""
+  else
+    fail "wanted \"$2\" in $1"
+  fi
+}
+
 cd "$TMP" || exit 1
 
 # Build every environment first. The first run of a header can take minutes
@@ -126,6 +142,7 @@ cd "$TMP" || exit 1
 caffeine --version >/dev/null 2>&1
 spl --version >/dev/null 2>&1
 git-branch-manager >/dev/null 2>&1
+keygen --version >/dev/null 2>&1
 
 # --- a list to choose from (gum choose) --------------------------------------
 in_terminal wait:navigate Escape -- caffeine
@@ -161,6 +178,53 @@ expect_exit 1
 in_terminal "wait:Spell name" demo Enter "wait:Short description" "Say hello." Enter -- own/spl new
 expect_exit 0
 expect_on_screen "Created spell 'demo'"
+
+# --- keygen: gum, then the passphrase prompts of ssh-keygen ------------------
+# keygen writes to ~/.ssh, so it gets a pretend home. nix keeps its download
+# cache, or it would fetch nixpkgs again.
+mkdir -p home
+keys=$TMP/home/.ssh
+in_home=(env "HOME=$TMP/home" "XDG_CACHE_HOME=${XDG_CACHE_HOME:-$HOME/.cache}")
+host=$(uname -n)
+no_passphrase=("wait:Enter passphrase" Enter "wait:Enter same passphrase" Enter)
+
+in_terminal wait:navigate Escape -- "${in_home[@]}" keygen
+expect_exit 1
+in_terminal wait:navigate C-c -- "${in_home[@]}" keygen
+expect_exit 130
+
+# Enter all the way through: an ed25519 key named after the system and host.
+in_terminal wait:navigate Enter wait:Comment Enter wait:File Enter "${no_passphrase[@]}" -- "${in_home[@]}" keygen
+expect_exit 0
+# shellcheck disable=SC2088  # keygen shows ~, and takes it as input
+expect_on_screen "~/.ssh/id_ed25519.pub copied to the clipboard"
+expect_in_file "$STAND_IN_STATE/clipboard" "ssh-ed25519 "
+expect_in_file "$STAND_IN_STATE/clipboard" "@${host%%.*}"
+first_key=$(cut -d " " -f 2 "$keys/id_ed25519.pub")
+
+# The key is there now. No is the answer unless you pick Yes.
+in_terminal wait:navigate Enter wait:Comment Enter wait:File Enter "wait:Replace it?" Enter -- "${in_home[@]}" keygen
+expect_exit 1
+expect_on_screen "Kept ~/.ssh/id_ed25519 as it is."
+expect_in_file "$keys/id_ed25519.pub" "$first_key"
+
+# Yes, then Ctrl-C at the passphrase: the old key must still be there.
+in_terminal "wait:Replace it?" y "wait:Enter passphrase" C-c -- "${in_home[@]}" keygen ed25519
+expect_exit 130
+expect_in_file "$keys/id_ed25519.pub" "$first_key"
+
+# With arguments, keygen asks only what it must.
+in_terminal "wait:Replace it?" y "${no_passphrase[@]}" -- "${in_home[@]}" keygen ed25519 me@example.com
+expect_exit 0
+expect_in_file "$keys/id_ed25519.pub" "me@example.com"
+
+# An RSA key in a file of your own. It copies that file, not id_rsa.pub.
+# shellcheck disable=SC2088  # keygen shows ~, and takes it as input
+in_terminal wait:navigate Down Enter wait:Comment Enter wait:File C-u "~/.ssh/work" Enter "${no_passphrase[@]}" -- "${in_home[@]}" keygen
+expect_exit 0
+# shellcheck disable=SC2088  # keygen shows ~, and takes it as input
+expect_on_screen "~/.ssh/work.pub copied to the clipboard"
+expect_in_file "$STAND_IN_STATE/clipboard" "ssh-rsa "
 
 # --- the git spells that ask questions ---------------------------------------
 git init --quiet --bare --initial-branch main remote.git
