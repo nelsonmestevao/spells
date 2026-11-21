@@ -13,6 +13,9 @@ Usage:
 Options:
   -h --help              Show this screen.
   -v --version           Show version.
+
+Needs from your system:
+  git.
 """
 
 from docopt import docopt
