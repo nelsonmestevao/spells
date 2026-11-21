@@ -98,6 +98,10 @@ expect "3 files now use nixpkgs $made_up" own/spl bump "$made_up"
 expect "$made_up" sed -n 2p own/cowecho
 expect "$made_up" sed -n 2p own/demo
 
+# --- localip -----------------------------------------------------------------
+# The address differs per machine. Every IPv4 address has a dot in it.
+expect "." localip
+
 # --- most_used_programs ------------------------------------------------------
 # It reads ~/.zsh_history and the aliases in ~/.zshrc, so it gets a pretend
 # home. nix keeps its download cache, or it would fetch nixpkgs again.

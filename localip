@@ -1,1 +1,17 @@
-ip -brief addr show | awk '/^wlp.*UP/{print $3}' | cut -d/ -f1
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p python3
+#! nix-shell -i python3
+"""Print this computer's address on the local network."""
+
+import socket
+import sys
+
+# Connecting a UDP socket sends nothing. It only makes the system pick the
+# network interface, and so the address, that leads out of this computer.
+with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+    try:
+        s.connect(("192.0.2.1", 9))
+    except OSError:
+        sys.exit("localip: this computer is not on a network")
+    print(s.getsockname()[0])
