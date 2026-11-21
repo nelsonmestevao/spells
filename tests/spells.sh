@@ -47,9 +47,11 @@ in_dir() {
   (cd "$1" && shift && "$@")
 }
 
-# with_stand_ins <command...>: run with the pretend systemctl, sudo and gsettings.
+# with_stand_ins <command...>: run with the pretend systemctl, sudo, gsettings
+# and clipboard. With no WAYLAND_DISPLAY, the clipboard spells skip wl-copy and
+# use the pretend pbcopy, even on a Wayland desktop.
 with_stand_ins() {
-  PATH=$SPELLS/tests/stand-ins:$PATH "$@"
+  WAYLAND_DISPLAY='' PATH=$SPELLS/tests/stand-ins:$PATH "$@"
 }
 
 # first_line <command...>: only the first line the command prints, errors included.
@@ -229,6 +231,14 @@ expect "lib/app/a.ex,100.0,high" cat coverage/cover/coverage_report.csv
 
 # --- fulldoctest (only what it would run; the real thing downloads GHC) ------
 expect "haskellPackages.doctest --run" fulldoctest --dry-run -p gloss Demo.hs -- --verbose
+
+# --- copy --------------------------------------------------------------------
+echo "from a pipe" | with_stand_ins copy
+expect "from a pipe" cat "$STAND_IN_STATE/clipboard"
+
+echo "from a file" >copy.txt
+with_stand_ins copy copy.txt
+expect "from a file" cat "$STAND_IN_STATE/clipboard"
 
 # --- git spells built on fzf -------------------------------------------------
 # With --filter, fzf prints what matches and needs no terminal.
