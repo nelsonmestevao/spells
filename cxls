@@ -1,0 +1,138 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p python313 python313Packages.xonsh python313Packages.docopt python313Packages.python-calamine python313Packages.tabulate
+#! nix-shell -i xonsh
+"""
+Show spreadsheets as tables in the terminal.
+
+Reads .xlsx, .xlsm, .xlsb, .xls and .ods files. The first row of each sheet
+is the table header. Pipe wide tables into `less -S` to scroll sideways.
+
+Usage:
+  {program} <file>... [--sheet=<sheet>]
+  {program} <file>... --list
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -s --sheet=<sheet>     Show only this sheet, by name or by number (1 is the first).
+  -l --list              List the sheet names instead of the tables.
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+from docopt import docopt
+from python_calamine import CalamineWorkbook
+from tabulate import tabulate
+
+import os
+import sys
+
+RED="\033[31m"
+RESET="\033[0m"
+# Sheet titles are bold only in a terminal, so files and pipes get plain text.
+BOLD="\033[1m" if sys.stdout.isatty() else ""
+PLAIN=RESET if sys.stdout.isatty() else ""
+
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+EXTENSIONS = (".xlsx", ".xlsm", ".xlsb", ".xls", ".ods")
+
+
+def open_workbook(path):
+    if not os.path.isfile(path):
+        error(f"'{path}' not found.")
+
+    if not path.lower().endswith(EXTENSIONS):
+        error(f"'{path}' is not a spreadsheet ({', '.join(EXTENSIONS)}).")
+
+    try:
+        return CalamineWorkbook.from_path(path)
+    except Exception as problem:
+        error(f"Could not read '{path}': {problem}")
+
+def pick_sheets(path, workbook, wanted):
+    names = workbook.sheet_names
+
+    if wanted is None:
+        return names
+    if wanted in names:
+        return [wanted]
+    if wanted.isdigit() and 1 <= int(wanted) <= len(names):
+        return [names[int(wanted) - 1]]
+
+    error(f"'{path}' has no sheet '{wanted}'. Its sheets are: {', '.join(names)}.")
+
+def is_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+def as_text(value):
+    # Spreadsheets store every number as a float. Show 42.0 as 42.
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+def column_alignments(rows):
+    """Right-align the columns that hold only numbers, like a spreadsheet does."""
+    alignments = []
+    for column in zip(*rows):
+        filled = [value for value in column if value != ""]
+        alignments.append("right" if filled and all(is_number(value) for value in filled) else "left")
+    return alignments
+
+def table(workbook, name):
+    rows = workbook.get_sheet_by_name(name).to_python()
+
+    if not rows:
+        return "(empty sheet)"
+
+    header, body = rows[0], rows[1:]
+
+    # Cells keep their text as is: "007" stays "007" and does not become 7.
+    return tabulate(
+        [[as_text(value) for value in row] for row in body],
+        headers=[as_text(value) for value in header],
+        tablefmt="rounded_outline",
+        disable_numparse=True,
+        colalign=column_alignments(body) or None,
+    )
+
+def main(args):
+    paths = args["<file>"]
+
+    # Open every file before printing anything, so a bad path stops the run early.
+    sheets = []
+    for path in paths:
+        workbook = open_workbook(path)
+        for name in pick_sheets(path, workbook, args["--sheet"]):
+            title = f"{path} › {name}" if len(paths) > 1 else name
+            sheets.append((title, workbook, name))
+
+    if args["--list"]:
+        for title, _, _ in sheets:
+            print(title)
+        return
+
+    for i, (title, workbook, name) in enumerate(sheets):
+        if len(sheets) > 1:
+            if i > 0:
+                print()
+            print(f"{BOLD}{title}{PLAIN}")
+        print(table(workbook, name))
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    try:
+        main(arguments)
+    except BrokenPipeError:
+        # The reader stopped early, as `| head` does. Send what is left to
+        # /dev/null, so the last flush does not fail too.
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        sys.exit(1)
+
+# vim: ft=python

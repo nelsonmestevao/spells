@@ -55,8 +55,9 @@ with_stand_ins() {
 cd "$TMP" || exit 1
 
 # --- every xonsh spell shows its help ---------------------------------------
-for spell in caffeine excoveralls-report firewall fulldoctest herd hexdiff jpg2jxl \
-  notifications spl theme git-sync-branches git-sync-worktrees git-worktree-select; do
+for spell in caffeine cdoc chtml cpdf cxls excoveralls-report firewall fulldoctest herd \
+  hexdiff jpg2jxl notifications spl theme git-sync-branches git-sync-worktrees \
+  git-worktree-select; do
   expect "Usage:" "$spell" --help
 done
 expect "hexdiff v0.1.0" hexdiff --version
@@ -123,9 +124,6 @@ expect "66.67%     2   git" with_pretend_home most_used_programs
 expect "4" math 2+2
 expect "2.50" math "scale=2; 10/4"
 
-echo "<h1>Hello there</h1>" >page.html
-expect "Hello there" cdoc page.html
-
 expect "Needs 3 parameters" split-video.sh
 
 # matrix runs until a key is pressed, so one is piped in.
@@ -181,6 +179,35 @@ expect "is not a .jpg/.jpeg file" jpg2jxl b.txt
 # difit comes from npm, so this needs the network. A real review opens a
 # browser, so only the help is checked here.
 expect "Usage: difit" review --help
+
+# --- cxls, cdoc, chtml and cpdf ----------------------------------------------
+# Each fixture holds the same small report, saved in a different format.
+fixtures=$SPELLS/tests/fixtures
+
+expect "│ Ada    │      42 │ 2024-03-01 │" cxls "$fixtures/sample.xlsx"
+expect "│ Linus  │     7.5 │ 2025-01-15 │" cxls "$fixtures/sample.xls"
+expect "Hello from the second sheet" cxls "$fixtures/sample.ods" --sheet 2
+expect $'Scores\nNotes' cxls "$fixtures/sample.xlsx" --list
+expect "has no sheet 'Nope'. Its sheets are: Scores, Notes." cxls "$fixtures/sample.xlsx" --sheet Nope
+expect "is not a spreadsheet" cxls "$fixtures/sample.pdf"
+
+expect '<h1 id="quarterly-report">Quarterly Report</h1>' cdoc "$fixtures/sample.docx"
+# pandoc drops the header row of an .odt table, unless cdoc steps in.
+expect "<td>Name</td>" cdoc "$fixtures/sample.odt"
+expect "This is a <strong>sample</strong> document" cdoc "$fixtures/sample.doc"
+expect "is not a .docx, .odt or .doc file" cdoc "$fixtures/sample.pdf"
+
+# From a pipe, as chtml reads when it gets no file.
+doc_as_markdown() { cdoc "$1" | chtml; }
+
+expect "| Ada   | 42    |" chtml "$fixtures/sample.html"
+expect "This is a **sample** document with a [link](https://example.com)." doc_as_markdown "$fixtures/sample.docx"
+expect "'nope.html' not found" chtml nope.html
+
+expect "## **Highlights**" cpdf "$fixtures/sample.pdf"
+expect "|Linus|7|" cpdf "$fixtures/sample.pdf" --pages 1
+expect "has pages 1 to 1. 2 is not in that range." cpdf "$fixtures/sample.pdf" --pages 2
+expect "is not a PDF file" cpdf "$fixtures/sample.html"
 
 # --- excoveralls-report ------------------------------------------------------
 mkdir -p coverage/cover
