@@ -52,13 +52,21 @@ with_stand_ins() {
   PATH=$SPELLS/tests/stand-ins:$PATH "$@"
 }
 
+# first_line <command...>: only the first line the command prints, errors included.
+first_line() {
+  "$@" 2>&1 | head -n 1
+}
+
 cd "$TMP" || exit 1
 
 # --- every xonsh spell shows its help ---------------------------------------
+# A wrong option must print the usage first, with no xonsh traceback hint
+# above it.
 for spell in caffeine cdoc chtml cpdf cxls excoveralls-report firewall fulldoctest herd \
   hexdiff jpg2jxl notifications spl theme git-sync-branches git-sync-worktrees \
   git-worktree-select; do
   expect "Usage:" "$spell" --help
+  expect "Usage:" first_line "$spell" --nope
 done
 expect "hexdiff v0.1.0" hexdiff --version
 
@@ -94,6 +102,7 @@ pinned=$(grep -oE '[0-9a-f]{40}' own/cowecho)
 
 expect "Created spell 'demo'" env EDITOR=true own/spl new demo --description "Say hello."
 expect "Say hello." own/demo --help
+expect "Usage:" first_line own/demo --nope
 expect "already uses nixpkgs $pinned" own/spl bump "$pinned"
 expect "is not a full commit hash" own/spl bump abc123
 
