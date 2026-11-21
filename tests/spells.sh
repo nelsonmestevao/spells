@@ -134,6 +134,11 @@ expect "2 converted, 0 skipped, 0 failed" jpg2jxl pics jxl
 expect "0 converted, 2 skipped, 0 failed" jpg2jxl pics jxl
 expect "is not a .jpg/.jpeg file" jpg2jxl b.txt
 
+# --- review ------------------------------------------------------------------
+# difit comes from npm, so this needs the network. A real review opens a
+# browser, so only the help is checked here.
+expect "Usage: difit" review --help
+
 # --- excoveralls-report ------------------------------------------------------
 mkdir -p coverage/cover
 cat >coverage/cover/excoveralls.html <<'HTML'
