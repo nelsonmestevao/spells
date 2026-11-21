@@ -75,21 +75,29 @@ in_terminal() {
   T start-server \; set-option -g exit-empty off \; set-option -g default-shell "$BASH" \; \
     new-session -d -s "$session" -x 120 -y 40 -c "$PWD" \
     "$(printf '%q ' "$@"); echo \"[exit status: \$?]\"; sleep 600"
-  for step in "${steps[@]}"; do
+  local timed_out=
+  for step in "${steps[@]}" "wait:[exit status:"; do
     case $step in
-      wait:*) wait_until "${step#wait:}" ;;
+      wait:*)
+        # One missed wait ends the case. Going on would only wait again.
+        if ! wait_until "${step#wait:}"; then
+          timed_out=${step#wait:}
+          break
+        fi
+        ;;
       *) T send-keys -t "$session" "$step" && sleep 0.3 ;;
     esac
   done
-  wait_until "[exit status:"
   screen=$(T capture-pane -p -t "$session")
   status=$(sed -n 's/.*\[exit status: \([0-9]*\)\].*/\1/p' <<<"$screen" | tail -n 1)
   T kill-session -t "$session" 2>/dev/null
 
-  # No case may ever end in a Python traceback.
+  # No case may ever end in a Python traceback, or stall.
   checks=$((checks + 1))
   if [[ $screen == *CalledProcessError* || $screen == *Traceback* ]]; then
     fail "the spell ended in a traceback"
+  elif [[ -n $timed_out ]]; then
+    fail "waited a minute for \"$timed_out\" and it never showed"
   fi
 }
 
@@ -112,6 +120,12 @@ expect_on_screen() {
 }
 
 cd "$TMP" || exit 1
+
+# Build every environment first. The first run of a header can take minutes
+# to download, and that must not eat into the one-minute waits below.
+caffeine --version >/dev/null 2>&1
+spl --version >/dev/null 2>&1
+git-branch-manager >/dev/null 2>&1
 
 # --- a list to choose from (gum choose) --------------------------------------
 in_terminal wait:navigate Escape -- caffeine
