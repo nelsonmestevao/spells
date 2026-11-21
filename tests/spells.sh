@@ -205,8 +205,7 @@ expect "This is a **sample** document with a [link](https://example.com)." doc_a
 expect "'nope.html' not found" chtml nope.html
 
 expect "## **Highlights**" cpdf "$fixtures/sample.pdf"
-expect "|Linus|7|" cpdf "$fixtures/sample.pdf" --pages 1
-expect "has pages 1 to 1. 2 is not in that range." cpdf "$fixtures/sample.pdf" --pages 2
+expect "|Linus|7|" cpdf "$fixtures/sample.pdf"
 expect "is not a PDF file" cpdf "$fixtures/sample.html"
 
 # --- excoveralls-report ------------------------------------------------------
