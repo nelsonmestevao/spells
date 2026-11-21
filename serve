@@ -1,1 +1,13 @@
-nix-shell -I nixpkgs=channel:nixos-26.05 -p python3 --command "python -m http.server"
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=channel:nixos-26.05
+#! nix-shell -p python3
+#! nix-shell -i bash
+
+# Serve the current folder over HTTP.
+#
+# Arguments go straight to `python -m http.server`:
+#   serve                           # port 8000
+#   serve 9000                      # another port
+#   serve --directory ~/Downloads   # another folder
+
+exec python -m http.server "$@"
