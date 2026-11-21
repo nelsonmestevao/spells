@@ -137,7 +137,9 @@ with_time_limit() { # with_time_limit <seconds> <command...>
   shift
   "$@" &
   local command=$!
-  (sleep "$limit" && kill "$command" 2>/dev/null) &
+  # The watchdog gives up its output. If it kept ours open, $(...) around
+  # this function would wait for the sleep to end, even after the command did.
+  (sleep "$limit" && kill "$command" 2>/dev/null) >/dev/null 2>&1 &
   local watchdog=$!
   wait "$command"
   status=$?
