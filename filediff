@@ -3,4 +3,4 @@
 #! nix-shell -p delta
 #! nix-shell -i sh
 
-delta -s $1 $2
+delta -s "$@"

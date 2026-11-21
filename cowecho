@@ -5,4 +5,4 @@
 
 # You might want to use --super option
 
-cowsay --random --aurora --bold $@
+cowsay --random --aurora --bold "$@"
