@@ -77,6 +77,24 @@ expect "unknown option: --nope" yt2mp3 --nope
 
 expect "https://example.com" qrcode https://example.com
 
+# --- spl ---------------------------------------------------------------------
+# spl works on the folder it is in, so it gets a folder of its own to change.
+mkdir own
+cp "$SPELLS/spl" "$SPELLS/cowecho" own/
+git init --quiet own
+pinned=$(grep -oE '[0-9a-f]{40}' own/cowecho)
+
+expect "Created spell 'demo'" env EDITOR=true own/spl new demo --description "Say hello."
+expect "Say hello." own/demo --help
+expect "already uses nixpkgs $pinned" own/spl bump "$pinned"
+expect "is not a full commit hash" own/spl bump abc123
+
+# This comes last: after it, the copy of spl names a commit that does not exist.
+made_up=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+expect "3 files now use nixpkgs $made_up" own/spl bump "$made_up"
+expect "$made_up" sed -n 2p own/cowecho
+expect "$made_up" sed -n 2p own/demo
+
 # --- hexdiff -----------------------------------------------------------------
 lock_line='  "jason": {:hex, :jason, "%s", "abc", [:mix], [], "hexpm", "def"},\n'
 git init --quiet --initial-branch main hex

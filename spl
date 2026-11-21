@@ -8,12 +8,15 @@ Manage spells.
 Usage:
   {program} new [<name>] [--description=<desc>]
   {program} edit [<name>]
+  {program} bump [<revision>]
   {program} (-h | --help)
   {program} --version
 
 Commands:
   new       Create a new spell from a template.
   edit      Open an existing spell in the editor.
+  bump      Move every spell to the newest nixpkgs-unstable commit,
+            or to <revision> (a full commit hash).
 
 Options:
   -h --help                    Show this screen.
@@ -25,11 +28,14 @@ from docopt import docopt
 from subprocess import CalledProcessError
 
 import os
+import re
 import sys
+import urllib.request
 
 
 RED="\033[31m"
 GREEN="\033[32m"
+BLUE="\033[34m"
 RESET="\033[0m"
 
 
@@ -40,8 +46,17 @@ def error(msg):
     print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
     sys.exit(1)
 
+def log_info(msg):
+    print(f"{BLUE}◆{RESET} {msg}")
 
-SPELLS = os.path.expanduser("~/.spells")
+
+# The folder this file is in. Every command works on the spells next to it.
+SPELLS = os.path.dirname(os.path.realpath(__file__))
+
+# Each spell names one nixpkgs commit in its header, like this.
+NIXPKGS = "https://github.com/NixOS/nixpkgs/archive/{revision}.tar.gz"
+PINNED_NIXPKGS = re.compile(r"https://github\.com/NixOS/nixpkgs/archive/[0-9a-f]{40}\.tar\.gz")
+NIXPKGS_CHANNEL = "nixpkgs-unstable"
 
 TEMPLATE = '''#!/usr/bin/env nix-shell
 #! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
@@ -151,11 +166,52 @@ def edit_spell(name):
 
     $EDITOR @(path)
 
+def newest_revision():
+    """The commit the nixpkgs-unstable channel points at right now."""
+    url = f"https://channels.nixos.org/{NIXPKGS_CHANNEL}/git-revision"
+    try:
+        with urllib.request.urlopen(url) as response:
+            return response.read().decode().strip()
+    except OSError as problem:
+        error(f"Could not ask {url} for the newest commit: {problem}")
+
+def files_with_a_pin():
+    """Every file in the spells folder that names a pinned nixpkgs, new ones included."""
+    found = !(git -C @(SPELLS) grep --files-with-matches --untracked -I "github.com/NixOS/nixpkgs/archive/")
+    return found.out.splitlines()
+
+def bump(revision):
+    revision = revision or newest_revision()
+
+    if not re.fullmatch("[0-9a-f]{40}", revision):
+        error(f"'{revision}' is not a full commit hash (40 letters and digits).")
+
+    changed = []
+    for name in files_with_a_pin():
+        path = os.path.join(SPELLS, name)
+        with open(path) as f:
+            before = f.read()
+        after = PINNED_NIXPKGS.sub(NIXPKGS.format(revision=revision), before)
+        if after != before:
+            with open(path, "w") as f:
+                f.write(after)
+            changed.append(name)
+
+    if not changed:
+        log_info(f"Every spell already uses nixpkgs {revision}")
+        return
+
+    success(f"{len(changed)} files now use nixpkgs {revision}")
+    log_info("The first run of each spell downloads its new packages.")
+    log_info("Run tests/run to check that the spells still work.")
+
 def main(args):
     if args["new"]:
         new_spell(args["<name>"], args["--description"])
     elif args["edit"]:
         edit_spell(args["<name>"])
+    elif args["bump"]:
+        bump(args["<revision>"])
 
 if __name__ == "__main__":
     arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
