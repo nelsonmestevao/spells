@@ -3,5 +3,5 @@
 # shims/ goes first on purpose. Its nix-shell wrapper remembers the environment
 # of every `#!/usr/bin/env nix-shell` script, so only the first run is slow.
 # For that it has to be found before the real nix-shell.
-export PATH="$SPELLS/shims:$PATH:$SPELLS:$SPELLS/git:$SPELLS/rofi:$SPELLS/setup"
+export PATH="$SPELLS/shims:$PATH:$SPELLS:$SPELLS/git"
 
