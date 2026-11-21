@@ -83,7 +83,9 @@ def pick_status_interactively():
     return $(gum choose "on" "off").strip()
 
 def systemctl_get_firewall_state():
-    return $(systemctl is-active firewall).strip()
+    # is-active exits non-zero when the firewall is not running. That is an
+    # answer, not a failure, so read the output without raising on it.
+    return !(systemctl is-active firewall).out.strip()
 
 def get_firewall_status():
     match systemctl_get_firewall_state():
