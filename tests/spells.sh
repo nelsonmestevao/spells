@@ -305,8 +305,13 @@ expect "the firewall turns back on when you reboot" with_stand_ins firewall off
 expect "caffeine is on" with_stand_ins caffeine on
 expect "on" with_stand_ins caffeine status
 
-expect "notifications are off" with_stand_ins notifications off
-expect "off" with_stand_ins notifications status
+# macOS has no command for Do Not Disturb, so there the spell only says so.
+if [[ $OSTYPE == darwin* ]]; then
+  expect "notifications cannot be switched on macOS" with_stand_ins notifications off
+else
+  expect "notifications are off" with_stand_ins notifications off
+  expect "off" with_stand_ins notifications status
+fi
 
 mkdir -p "$DOTFILES/home/programs/git"
 printf '[delta]\n    light = false\n' >"$DOTFILES/home/programs/git/common.ini"
@@ -328,6 +333,11 @@ printf 'background-opacity = 0.6\nfont-size = 16\n' >"$DOTFILES/home/programs/gh
 expect "USAGE" mode --help
 expect "mode v0.5.1" mode --version
 expect "Changed to mode demo!" with_stand_ins mode demo
+if [[ $OSTYPE == darwin* ]]; then
+  expect "notifications: not on macOS, left as they are" with_stand_ins mode chill
+  expect "notifications       -" with_stand_ins mode status
+  with_stand_ins mode demo >/dev/null 2>&1
+fi
 expect "demo" with_stand_ins mode status
 expect '"editor.fontSize": 32,' cat "$DOTFILES/home/programs/vscode/settings.json"
 expect "font-size = 26" cat "$DOTFILES/home/programs/ghostty/config"
