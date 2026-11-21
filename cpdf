@@ -9,12 +9,11 @@ Headings, lists and tables come from the layout of the text. A scanned PDF
 has no text in it, only pictures of pages, so it comes out empty.
 
 Usage:
-  {program} <file>... [--pages=<pages>]
+  {program} <file>...
   {program} (-h | --help)
   {program} --version
 
 Options:
-  -p --pages=<pages>     Show only these pages, like 1-3,7 (1 is the first page).
   -h --help              Show this screen.
   -v --version           Show version.
 """
@@ -63,30 +62,14 @@ def open_pdf(path):
 
     return document
 
-def page_numbers(wanted, path, page_count):
-    """Turn "1-3,7" into [0, 1, 2, 6], the numbers pymupdf uses (0 is the first page)."""
-    numbers = []
-    for part in wanted.split(","):
-        first, _, last = part.strip().partition("-")
-        if not first.isdigit() or not (last or first).isdigit():
-            error(f"'{wanted}' is not a list of pages, like 1-3,7.")
-
-        first, last = int(first), int(last or first)
-        if not 1 <= first <= last <= page_count:
-            error(f"'{path}' has pages 1 to {page_count}. {part.strip()} is not in that range.")
-
-        numbers.extend(range(first - 1, last))
-    return numbers
-
 def main(args):
     documents = [(path, open_pdf(path)) for path in args["<file>"]]
 
     for path, document in documents:
-        pages = page_numbers(args["--pages"], path, document.page_count) if args["--pages"] else None
-        markdown = pymupdf4llm.to_markdown(document, pages=pages)
+        markdown = pymupdf4llm.to_markdown(document)
 
         if markdown.strip():
-            print(markdown, end="" if markdown.endswith("\n") else "\n")
+            print(markdown, end="")
         else:
             log_warn(f"No text in '{path}'. It may be a scanned PDF.")
 
