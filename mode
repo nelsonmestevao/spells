@@ -28,6 +28,24 @@ declare -rA MODES=(
     [demo]="light  on   off  1    32  26"
 )
 
+# Settings this system cannot switch. change_to leaves them as they are, and
+# status shows "-" for them. macOS has no command for Do Not Disturb.
+declare -a UNSUPPORTED=()
+if [[ ${OSTYPE} == darwin* ]]; then
+    UNSUPPORTED=(notifications)
+fi
+readonly UNSUPPORTED
+
+# is_supported SETTING
+function is_supported() {
+    declare -r setting="$1"
+    declare unsupported
+
+    for unsupported in "${UNSUPPORTED[@]}"; do
+        [ "${unsupported}" != "${setting}" ] || return 1
+    done
+}
+
 function die() {
     echo "${PROGRAM}: $*" >&2
     exit 1
@@ -189,6 +207,10 @@ function change_to() {
     [ "${#values[@]}" -eq "${#SETTINGS[@]}" ] || die "mode ${mode} has ${#values[@]} values, expected one per setting (${#SETTINGS[@]})"
 
     for i in "${!SETTINGS[@]}"; do
+        if ! is_supported "${SETTINGS[i]}"; then
+            echo "▲ ${SETTINGS[i]}: not on macOS, left as they are" >&2
+            continue
+        fi
         "set_${SETTINGS[i]}" "${values[i]}"
     done
 
@@ -201,10 +223,14 @@ function change_to() {
 # MODES entry separated by single spaces), or "custom" when none matches.
 function current_mode() {
     declare -r actual="$1"
-    declare name fields
+    declare name fields i
 
     for name in "${!MODES[@]}"; do
         read -ra fields <<<"${MODES[${name}]}"
+        # A setting this system cannot switch cannot tell two modes apart.
+        for i in "${!SETTINGS[@]}"; do
+            is_supported "${SETTINGS[i]}" || fields[i]="-"
+        done
         if [ "${fields[*]}" = "${actual}" ]; then
             echo "${name}"
             return
@@ -219,7 +245,11 @@ function display_status() {
     declare setting value i
 
     for setting in "${SETTINGS[@]}"; do
-        value=$("get_${setting}")
+        if is_supported "${setting}"; then
+            value=$("get_${setting}")
+        else
+            value="-"
+        fi
         values+=("${value}")
     done
 
