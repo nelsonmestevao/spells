@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Copy to the clipboard, or print what it holds.
+#
+#   echo hello | clip       # copy what comes in
+#   clip < notes.txt        # copy a file
+#   clip                    # print the clipboard
+#   clip > notes.txt        # save the clipboard to a file
+#
+# It copies when its input is a pipe or a file. Otherwise it prints.
+#
+# Needs from your system: a clipboard tool (wl-clipboard, pbcopy and pbpaste,
+# or xsel).
+
+if [[ $# -gt 0 ]]; then
+  echo "Usage: $(basename "$0") < file    (copy)" >&2
+  echo "       $(basename "$0")           (print the clipboard)" >&2
+  exit 1
+fi
+
+no_tool() {
+  echo "clip: found no clipboard tool (wl-clipboard, pbcopy or xsel)" >&2
+  exit 1
+}
+
+to_clipboard() {
+  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-copy >/dev/null; then
+    wl-copy
+  elif command -v pbcopy >/dev/null; then
+    pbcopy
+  elif command -v xsel >/dev/null; then
+    xsel --input --clipboard
+  else
+    no_tool
+  fi
+}
+
+from_clipboard() {
+  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-paste >/dev/null; then
+    wl-paste --no-newline
+  elif command -v pbpaste >/dev/null; then
+    pbpaste
+  elif command -v xsel >/dev/null; then
+    xsel --output --clipboard
+  else
+    no_tool
+  fi
+}
+
+# A terminal or /dev/null on stdin means there is nothing to copy.
+if [[ -p /dev/stdin || -f /dev/stdin ]]; then
+  to_clipboard
+else
+  from_clipboard
+fi
