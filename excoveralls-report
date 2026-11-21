@@ -28,19 +28,19 @@ import re
 import sys
 from collections import defaultdict
 
-$RED=$(tput setaf 1).strip()
-$GREEN=$(tput setaf 2).strip()
-$YELLOW=$(tput setaf 3).strip()
-$BLUE=$(tput setaf 4).strip()
-$WHITE=$(tput setaf 7).strip()
-$RESET=$(tput sgr0).strip()
+$RED="\033[31m"
+$GREEN="\033[32m"
+$YELLOW="\033[33m"
+$BLUE="\033[34m"
+$WHITE="\033[37m"
+$RESET="\033[0m"
 
-RED=$(tput setaf 1).strip()
-GREEN=$(tput setaf 2).strip()
-YELLOW=$(tput setaf 3).strip()
-BLUE=$(tput setaf 4).strip()
-WHITE=$(tput setaf 7).strip()
-RESET=$(tput sgr0).strip()
+RED="\033[31m"
+GREEN="\033[32m"
+YELLOW="\033[33m"
+BLUE="\033[34m"
+WHITE="\033[37m"
+RESET="\033[0m"
 
 PATTERN = re.compile(
     r"<span class=.cov\s+\w+.>([0-9.]+)</span>\s*"
