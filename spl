@@ -19,6 +19,9 @@ Options:
   -h --help                    Show this screen.
   -v --version                 Show version.
   -d --description=<desc>      Short description of the spell.
+
+Needs from your system:
+  $EDITOR set to your editor.
 """
 
 from docopt import docopt

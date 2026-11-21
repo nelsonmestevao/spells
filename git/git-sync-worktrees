@@ -15,6 +15,9 @@ Options:
   -v --version           Show version.
   -r --remote=<remote>   Remote repository [default: origin].
   -b --branch=<branch>   Branch to sync [default: main].
+
+Needs from your system:
+  git.
 """
 
 from docopt import docopt

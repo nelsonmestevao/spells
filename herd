@@ -26,6 +26,9 @@ Options:
   -v --version           Show version.
   -r --remote=<remote>   Remote to look for branches in [default: origin].
   -s --setup=<cmd>       Run <cmd> in a new tab of the space (stays open after).
+
+Needs from your system:
+  git, and herdr-app or hc.
 """
 
 from docopt import docopt
