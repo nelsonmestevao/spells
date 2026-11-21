@@ -24,7 +24,9 @@ exec "$REAL" "\$@"
 SPY
 chmod +x "$TMP/spy/nix-shell"
 
-export XDG_CACHE_HOME=$TMP/cache
+# Only the wrapper's own folder moves. Moving XDG_CACHE_HOME would also move
+# nix's download cache, and nix would fetch nixpkgs again on every run.
+export NIX_SHELL_CACHE_DIR=$TMP/cache
 export PATH=$SPELLS/shims:$TMP/spy:$PATH
 unset PYTHONPATH NIX_SHELL_CACHE
 
@@ -32,7 +34,7 @@ unset PYTHONPATH NIX_SHELL_CACHE
 NIXPKGS=$(sed -n '2p' "$SPELLS/cowecho")
 
 calls() { wc -l <"$TMP/calls" 2>/dev/null | tr -d ' ' || echo 0; }
-saved_count() { find "$XDG_CACHE_HOME/nix-shell-cache" -type f | wc -l | tr -d ' '; }
+saved_count() { find "$NIX_SHELL_CACHE_DIR" -type f | wc -l | tr -d ' '; }
 
 failed=0
 check() { # check <what> <expected> <actual>
@@ -72,7 +74,7 @@ check "second run: same result" "pv is 1, args: 3 [two words], stdin: piped" "$o
 check "second run: does not ask the real nix-shell" 1 "$(calls)"
 
 # --- when a saved environment must not be used -----------------------------
-saved_file=$(find "$XDG_CACHE_HOME/nix-shell-cache" -type f)
+saved_file=$(find "$NIX_SHELL_CACHE_DIR" -type f)
 
 sed -i.bak 's/^saved_at=.*/saved_at=1/' "$saved_file"
 "$TMP/hello" </dev/null >/dev/null 2>&1

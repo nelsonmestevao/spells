@@ -15,6 +15,7 @@
 #
 # To turn it off for good, take this folder off PATH. Every script still
 # works, just slower. To start fresh, delete ~/.cache/nix-shell-cache.
+# NIX_SHELL_CACHE_DIR names another folder to save in.
 #
 # Written for bash 3.2, the one macOS ships.
 
@@ -48,7 +49,7 @@ fi
 interpreter=${BASH_REMATCH[1]}
 
 checksum=$(cksum <<<"$header")
-saved=${XDG_CACHE_HOME:-$HOME/.cache}/nix-shell-cache/${checksum%% *}
+saved=${NIX_SHELL_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/nix-shell-cache}/${checksum%% *}
 now=${EPOCHSECONDS:-$(date +%s)}
 
 # What a saved file holds. Loading one sets these.
