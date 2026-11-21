@@ -1,15 +1,18 @@
-#!/usr/bin/env bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p bash gnused gnugrep
+#! nix-shell -i bash
 
 set -Eeuo pipefail
 shopt -s inherit_errexit
 
-BASE_DIR=$(dirname "${BASH_SOURCE[0]:-$0}")
-
-# shellcheck source=./helpers.sh
-. "${BASE_DIR}/helpers.sh"
-
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
 VERSION=0.5.1
+
+# Print a help section title in bold capitals.
+function help_section() {
+    printf '\033[1m%s\033[0m' "${*^^}"
+}
 
 : "${DOTFILES:?must point to the dotfiles checkout}"
 readonly CODE_SETTINGS="${DOTFILES}/home/programs/vscode/settings.json"
@@ -231,7 +234,7 @@ case ${1:-error} in
     display_help
     ;;
 -v | --version)
-    display_version "$PROGRAM" "$VERSION"
+    echo "${PROGRAM} v${VERSION}"
     ;;
 -t | --theme)
     theme status
