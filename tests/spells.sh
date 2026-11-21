@@ -98,6 +98,19 @@ expect "3 files now use nixpkgs $made_up" own/spl bump "$made_up"
 expect "$made_up" sed -n 2p own/cowecho
 expect "$made_up" sed -n 2p own/demo
 
+# --- most_used_programs ------------------------------------------------------
+# It reads ~/.zsh_history and the aliases in ~/.zshrc, so it gets a pretend
+# home. nix keeps its download cache, or it would fetch nixpkgs again.
+mkdir home
+echo "alias gs='git status'" >home/.zshrc
+printf ': 1700000000:0;%s\n' gs gs ls >home/.zsh_history
+nix_cache=${XDG_CACHE_HOME:-$HOME/.cache}
+with_pretend_home() {
+  XDG_CACHE_HOME=$nix_cache HOME=$TMP/home "$@"
+}
+
+expect "66.67%     2   git" with_pretend_home most_used_programs
+
 # --- hexdiff -----------------------------------------------------------------
 lock_line='  "jason": {:hex, :jason, "%s", "abc", [:mix], [], "hexpm", "def"},\n'
 git init --quiet --initial-branch main hex
