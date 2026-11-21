@@ -1,0 +1,86 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p curl pandoc python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Show HTML as Markdown.
+
+Reads HTML files and web pages. With no <source>, reads HTML from a pipe.
+
+Usage:
+  {program} [<source>...]
+  {program} (-h | --help)
+  {program} --version
+
+Arguments:
+  <source>               An HTML file, or a web address (http:// or https://).
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+
+Examples:
+  {program} page.html
+  {program} https://example.com
+  cdoc report.docx | {program}
+"""
+
+from docopt import docopt
+from subprocess import CalledProcessError
+
+import os
+import sys
+import tempfile
+
+RED="\033[31m"
+RESET="\033[0m"
+
+
+def error(msg):
+    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
+    sys.exit(1)
+
+
+def is_web_address(source):
+    return source.startswith(("http://", "https://"))
+
+def download(address, path):
+    # curl, not pandoc, fetches the page. pandoc sends no User-Agent, and
+    # some sites (Wikipedia, for one) answer that with an error page.
+    try:
+        curl --silent --show-error --fail --location --output @(path) @(address)
+    except CalledProcessError:
+        error(f"Could not download '{address}'.")
+    return path
+
+def main(args):
+    sources = args["<source>"]
+
+    if not sources and sys.stdin.isatty():
+        error("Give an HTML file or a web address, or pipe HTML in.")
+
+    for source in sources:
+        if not is_web_address(source) and not os.path.isfile(source):
+            error(f"'{source}' not found.")
+
+    with tempfile.TemporaryDirectory() as folder:
+        files = [
+            download(source, os.path.join(folder, f"page-{number}.html")) if is_web_address(source) else source
+            for number, source in enumerate(sources)
+        ]
+
+        # gfm is GitHub's Markdown, with tables. Without raw_html, tags that
+        # Markdown has no syntax for (div, span, script) are dropped and only
+        # their text stays. With no files, pandoc reads the pipe.
+        try:
+            pandoc --from=html --to=gfm-raw_html --wrap=none @(files)
+        except CalledProcessError:
+            error("Could not convert the HTML.")
+
+
+if __name__ == "__main__":
+    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+
+    main(arguments)
+
+# vim: ft=python
