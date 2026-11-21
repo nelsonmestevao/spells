@@ -111,6 +111,26 @@ with_pretend_home() {
 
 expect "66.67%     2   git" with_pretend_home most_used_programs
 
+# --- small spells that run one tool ------------------------------------------
+expect "4" math 2+2
+expect "2.50" math "scale=2; 10/4"
+
+echo "<h1>Hello there</h1>" >page.html
+expect "Hello there" cdoc page.html
+
+expect "Needs 3 parameters" split-video.sh
+
+# matrix runs until a key is pressed, so one is piped in.
+expect "exit 0" bash -c 'printf x | TERM=xterm matrix >/dev/null 2>&1; echo "exit $?"'
+
+# clean_downloads_folder sorts ~/Downloads, so it works on the pretend home.
+mkdir home/Downloads
+touch home/Downloads/photo.png home/Downloads/notes.pdf home/Downloads/unknown.xyz
+with_pretend_home clean_downloads_folder
+expect "photo.png" ls home/Downloads/Images
+expect "notes.pdf" ls home/Downloads/Documents
+expect "unknown.xyz" ls home/Downloads/Misc
+
 # --- hexdiff -----------------------------------------------------------------
 lock_line='  "jason": {:hex, :jason, "%s", "abc", [:mix], [], "hexpm", "def"},\n'
 git init --quiet --initial-branch main hex

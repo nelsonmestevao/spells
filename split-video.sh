@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p ffmpeg
+#! nix-shell -i bash
 # SOURCE: https://stackoverflow.com/a/52158160/8222710
 # SOLUTION: ffmpeg -i 2021-12-21\ 12-10-23.mp4 -c copy -map 0 -segment_time 180 -f segment pr26_%03d.mp4
 
