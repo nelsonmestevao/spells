@@ -87,7 +87,12 @@ def main(args):
     if not os.path.isfile("mix.lock"):
         error("No mix.lock found in current directory")
 
-    diff_output = $(git diff @(base) -- mix.lock 2>&1).strip()
+    diff = !(git diff @(base) -- mix.lock)
+    if diff.returncode != 0:
+        print(diff.errors.strip(), file=sys.stderr)
+        error(f"Could not compare mix.lock with '{base}'")
+
+    diff_output = diff.out.strip()
 
     if not diff_output:
         log_info("No changes to mix.lock")
