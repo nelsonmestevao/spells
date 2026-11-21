@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+# nix-shell, with a memory.
+#
+# A script that starts with `#!/usr/bin/env nix-shell` makes nix work out its
+# environment on every run. That takes about a second, even when nothing has
+# changed. This wrapper saves the PATH and PYTHONPATH that nix-shell built for
+# a header, and reuses them the next time it sees the same header.
+#
+#   - It only steps in for script headers that use `-p` and `-i`. Any other
+#     use of nix-shell goes straight to the real one.
+#   - A saved environment is used for a week, then built again, so a header
+#     that follows a moving channel still gets updates.
+#   - If nix has deleted a saved folder since, the environment is built again.
+#   - NIX_SHELL_CACHE=off skips the cache for one run.
+#
+# To turn it off for good, take this folder off PATH. Every script still
+# works, just slower. To start fresh, delete ~/.cache/nix-shell-cache.
+#
+# Written for bash 3.2, the one macOS ships.
+
+# The real nix-shell: the first one on PATH that is not this file.
+real=
+IFS=: read -ra folders <<<"$PATH"
+for folder in "${folders[@]}"; do
+  if [[ -x $folder/nix-shell && ! $folder/nix-shell -ef $0 ]]; then
+    real=$folder/nix-shell
+    break
+  fi
+done
+if [[ -z $real ]]; then
+  echo "nix-shell: the real nix-shell is not on PATH" >&2
+  exit 127
+fi
+
+# The `#! nix-shell` lines of the script we were asked to run, if any.
+script=${1-}
+header=
+if [[ ${NIX_SHELL_CACHE-} != off && -f $script ]]; then
+  header=$(grep '^#! *nix-shell ' "$script")
+fi
+
+# PATH and PYTHONPATH fully describe a header made of packages (-p) and an
+# interpreter (-i). Leave every other use to the real nix-shell.
+interpreter_flag='[[:space:]]-i[[:space:]]+([^[:space:]]+)'
+if [[ $header != *" -p "* || $header == *"--pure"* || ! $header =~ $interpreter_flag ]]; then
+  exec "$real" "$@"
+fi
+interpreter=${BASH_REMATCH[1]}
+
+checksum=$(cksum <<<"$header")
+saved=${XDG_CACHE_HOME:-$HOME/.cache}/nix-shell-cache/${checksum%% *}
+now=${EPOCHSECONDS:-$(date +%s)}
+
+# What a saved file holds. Loading one sets these.
+saved_header='' saved_at=0 extra_path='' extra_pythonpath=''
+
+# True when the saved environment is for this header, is under a week old,
+# and every folder in it still exists.
+saved_is_usable() {
+  [[ -f $saved ]] || return 1
+  # shellcheck source=/dev/null
+  source "$saved"
+  [[ $saved_header == "$header" ]] || return 1
+  ((now - saved_at < 7 * 24 * 60 * 60)) || return 1
+  local IFS=: folder
+  for folder in $extra_path $extra_pythonpath; do
+    [[ -z $folder || -d $folder ]] || return 1
+  done
+}
+
+# Ask the real nix-shell once what it adds to PATH and PYTHONPATH, and save
+# the answer. The question is a copy of the header that runs one line of bash.
+build_and_save() {
+  local probe=$saved.probe.$$ answer=$saved.answer.$$ built=1
+  mkdir -p "${saved%/*}"
+  {
+    echo '#!/usr/bin/env nix-shell'
+    sed -E 's/([[:space:]])-i[[:space:]]+[^[:space:]]+/\1-i bash/' <<<"$header"
+    cat <<'PROBE'
+printf 'extra_path=%q\nextra_pythonpath=%q\n' "${PATH%"$OUTER_PATH"}" "${PYTHONPATH-}"
+PROBE
+  } >"$probe"
+  if {
+    printf 'saved_header=%q\nsaved_at=%s\n' "$header" "$now"
+    (unset PYTHONPATH && OUTER_PATH=$PATH "$real" "$probe")
+  } >"$answer"; then
+    # shellcheck source=/dev/null
+    mv "$answer" "$saved" && source "$saved" && built=0
+  fi
+  rm -f "$probe" "$answer"
+  return $built
+}
+
+# If the environment cannot be built, let the real nix-shell show why.
+saved_is_usable || build_and_save || exec "$real" "$@"
+
+shift
+export PATH=$extra_path$PATH
+if [[ -n $extra_pythonpath ]]; then
+  export PYTHONPATH=${PYTHONPATH:+$PYTHONPATH:}$extra_pythonpath
+fi
+exec "$interpreter" "$script" "$@"
