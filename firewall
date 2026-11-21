@@ -16,6 +16,9 @@ Usage:
 Options:
   -h --help              Show this screen.
   -v --version           Show version.
+
+Needs from your system:
+  systemctl and sudo, with a firewall service as on NixOS.
 """
 
 from docopt import docopt
