@@ -32,36 +32,58 @@ run() {
   fi
 }
 
+# The folder of the worktree that has a branch checked out, if there is one.
+worktree_of() {
+  git worktree list --porcelain | awk -v wanted="branch refs/heads/$1" '
+    /^worktree / { folder = substr($0, 10) }
+    $0 == wanted { print folder }'
+}
+
+# delete_branch <branch> <-d or -D> <merged or squash-merged>
+#
+# Delete a branch. git will not delete a branch that is checked out in a
+# worktree, so that worktree goes first. A worktree with work that is not
+# committed is left alone, and so is its branch.
+delete_branch() {
+  local branch=$1 flag=$2 kind=$3 worktree
+  worktree=$(worktree_of "$branch")
+
+  if [[ -d $worktree && -n $(git -C "$worktree" status --porcelain 2>/dev/null) ]]; then
+    echo "Keeping $kind branch: $branch"
+    echo "  its worktree has work that is not committed: $worktree"
+    return 0
+  fi
+
+  echo "Deleting $kind branch: $branch"
+  if [[ -n $worktree ]]; then
+    echo "  and its worktree: $worktree"
+    run git worktree remove "$worktree" || return 0
+  fi
+  run git branch "$flag" "$branch" || true
+}
+
 git fetch -p
 
+# Forget worktrees whose folder was deleted by hand, so their branches are free.
+run git worktree prune
+
 # Delete branches detected as merged (fast-forward merges)
-merged_branches=$(git branch --merged "$main_branch" | grep -v "main\|master\|\*" || true)
-for branch in $merged_branches; do
-  [[ "$branch" == "$current_branch" ]] && continue
-  echo "Deleting merged branch: $branch"
-  run git branch -d "$branch"
+git for-each-ref --format '%(refname:short)' --merged "$main_branch" refs/heads/ | while read -r branch; do
+  [[ "$branch" == "$main_branch" || "$branch" == "main" || "$branch" == "master" || "$branch" == "$current_branch" ]] && continue
+
+  delete_branch "$branch" -d merged
 done
 
 # Delete branches that were squash-merged into the main branch
 git for-each-ref --format '%(refname:short)' refs/heads/ | while read -r branch; do
-  [[ "$branch" == "$main_branch" || "$branch" == "master" || "$branch" == "$current_branch" ]] && continue
+  [[ "$branch" == "$main_branch" || "$branch" == "main" || "$branch" == "master" || "$branch" == "$current_branch" ]] && continue
 
   merge_base=$(git merge-base "origin/$main_branch" "$branch" 2>/dev/null) || continue
   tree=$(git rev-parse "$branch^{tree}" 2>/dev/null) || continue
   merge_commit=$(git commit-tree "$tree" -p "$merge_base" -m "test" 2>/dev/null) || continue
 
   if git cherry "origin/$main_branch" "$merge_commit" 2>/dev/null | grep -q '^-'; then
-    echo "Deleting squash-merged branch: $branch"
-    run git branch -D "$branch"
-  fi
-done
-
-# Clean up worktrees pointing to deleted branches
-git worktree list --porcelain | grep "^worktree " | awk '{print $2}' | while read -r wt; do
-  branch=$(git -C "$wt" branch --show-current 2>/dev/null)
-  if [ -n "$branch" ] && ! git rev-parse --verify "$branch" &>/dev/null; then
-    echo "Removing worktree: $wt (branch $branch no longer exists)"
-    run git worktree remove --force "$wt"
+    delete_branch "$branch" -D squash-merged
   fi
 done
 
