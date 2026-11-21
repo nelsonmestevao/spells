@@ -21,7 +21,7 @@ Needs from your system:
   git.
 """
 
-from docopt import docopt
+from docopt import docopt, DocoptExit
 
 import os
 import re
@@ -118,7 +118,12 @@ def main(args):
 
 
 if __name__ == "__main__":
-    arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+    try:
+        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.0')
+    except DocoptExit as wrong_usage:
+        # xonsh takes docopt's exit for a crash and prints a traceback hint
+        # above the usage. A plain SystemExit prints only the usage.
+        sys.exit(wrong_usage.code)
 
     main(arguments)
 
