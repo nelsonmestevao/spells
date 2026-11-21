@@ -325,6 +325,28 @@ in_dir clone git push --quiet origin main
 expect "Syncing in-worktree ✓" in_dir clone git-sync-worktrees
 expect "third" in_dir clone git log --format=%s -1 origin/in-worktree~1
 
+# --- git clean-branches ------------------------------------------------------
+# Merged branches go, also when they live in a worktree. A worktree with work
+# that is not committed stays, and so does every branch that is not merged.
+git init --quiet --bare --initial-branch main cleanup.git
+git clone --quiet cleanup.git cleanup 2>/dev/null
+commit cleanup base
+in_dir cleanup git push --quiet origin main
+in_dir cleanup git branch merged
+in_dir cleanup git worktree add --quiet ../cleanup-merged -b merged-in-worktree
+in_dir cleanup git worktree add --quiet ../cleanup-with-work -b merged-with-work
+touch cleanup-with-work/not-committed
+in_dir cleanup git worktree add --quiet ../cleanup-unmerged -b unmerged
+commit cleanup-unmerged only-on-the-branch
+
+expect "(dry-run) git worktree remove" in_dir cleanup git-clean-branches --dry-run
+expect $'main\nmerged\nmerged-in-worktree\nmerged-with-work\nunmerged' in_dir cleanup git branch --format='%(refname:short)'
+
+expect "Keeping merged branch: merged-with-work" in_dir cleanup git-clean-branches
+expect $'main\nmerged-with-work\nunmerged' in_dir cleanup git branch --format='%(refname:short)'
+expect "not-committed" ls cleanup-with-work
+expect "No such file" ls cleanup-merged
+
 # --- git spells that ask questions (only the part that needs no terminal) ----
 mkdir not-a-repo
 expect "Must be run in a" in_dir not-a-repo git-branch-manager
