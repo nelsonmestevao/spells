@@ -1,15 +1,29 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
-#! nix-shell -p deno
+#! nix-shell -p qrencode
 #! nix-shell -i bash
-exec deno run - "$@" <<'DENO'
-import QRCode from "npm:qrcode@1.5";
 
-const args = Deno.args.filter(a => a !== "--large");
-const large = Deno.args.includes("--large");
-const url = args[0];
-const opts = { type: "terminal", ...(large ? {} : { small: true }) };
-const qr = await QRCode.toString(url, opts);
-console.log(qr);
-console.log(`\n${url}\n`);
-DENO
+# Show a QR code for some text, usually a link, in the terminal.
+#
+#   qrcode https://example.com
+#   qrcode https://example.com --large    # full-size blocks, easier to scan from afar
+
+set -euo pipefail
+
+TYPE=ANSIUTF8 # half-height blocks
+TEXT=
+
+for ARG in "$@"; do
+  case "$ARG" in
+    --large) TYPE=ANSI ;;
+    *) TEXT=$ARG ;;
+  esac
+done
+
+if [[ -z $TEXT ]]; then
+  echo "Usage: $(basename "$0") <text> [--large]" >&2
+  exit 1
+fi
+
+qrencode --type "$TYPE" "$TEXT"
+printf '\n%s\n\n' "$TEXT"
