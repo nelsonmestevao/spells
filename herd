@@ -29,6 +29,7 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import json
 import os
@@ -130,7 +131,10 @@ def pick_branch(remote):
         name = ref.removeprefix("refs/heads/").removeprefix(f"refs/remotes/{remote}/")
         if name not in names:
             names.append(name)
-    return $(echo @("\n".join(names)) | gum filter --placeholder "Pick a branch...").strip()
+    try:
+        return $(echo @("\n".join(names)) | gum filter --placeholder "Pick a branch...").strip()
+    except CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
 
 def add_worktree(branch, path, remote, fetched):
     """Add a worktree for branch at path from a local, remote or new branch."""

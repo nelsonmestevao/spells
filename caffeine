@@ -16,6 +16,7 @@ Options:
 """
 
 from docopt import docopt
+from subprocess import CalledProcessError
 
 import os
 import sys
@@ -29,7 +30,10 @@ $RESET="\033[0m"
 # $RAISE_SUBPROC_ERROR = True
 
 def pick_status_interactively():
-  return $(gum choose "on" "off").strip()
+  try:
+    return $(gum choose "on" "off").strip()
+  except CalledProcessError as cancelled:
+    sys.exit(cancelled.returncode)
 
 def gsettings_get_caffeine_status():
     return $(gsettings get org.gnome.shell.extensions.caffeine cli-toggle).strip().lower()
