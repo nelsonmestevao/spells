@@ -97,7 +97,7 @@ def table(workbook, name):
         headers=[as_text(value) for value in header],
         tablefmt="rounded_outline",
         disable_numparse=True,
-        colalign=column_alignments(body) or None,
+        colalign=column_alignments(body),
     )
 
 def main(args):
