@@ -19,6 +19,7 @@ from docopt import docopt
 
 import os
 import re
+import subprocess
 import sys
 
 # These are easy to use in bash commands.
@@ -83,7 +84,10 @@ def main(args):
         error("No worktrees found")
 
     display = "\n".join(entries)
-    selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
+    try:
+        selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
+    except subprocess.CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
 
     if not selected:
         sys.exit(1)

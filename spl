@@ -24,6 +24,7 @@ Options:
 from docopt import docopt
 
 import os
+import subprocess
 import sys
 
 # These are easy to use in bash commands.
@@ -166,13 +167,20 @@ if __name__ == "__main__":
 # vim: ft=python
 '''
 
+def ask(*gum_args):
+    """Run a gum prompt and return the answer. Stop quietly if it is cancelled."""
+    try:
+        return $(gum @(gum_args)).strip()
+    except subprocess.CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
+
 def pick_spell_name():
-    return $(gum input --placeholder "Spell name").strip()
+    return ask("input", "--placeholder", "Spell name")
 
 def pick_spell_interactively():
     spells = [f for f in os.listdir(SPELLS) if os.path.isfile(os.path.join(SPELLS, f)) and not f.startswith('.')]
     spells.sort()
-    return $(gum filter @(spells)).strip()
+    return ask("filter", *spells)
 
 def new_spell(name, description):
     if not name:
@@ -187,7 +195,7 @@ def new_spell(name, description):
         error(f"Spell '{name}' already exists.")
 
     if not description:
-        description = $(gum input --placeholder "Short description of the spell").strip()
+        description = ask("input", "--placeholder", "Short description of the spell")
 
     with open(path, 'w') as f:
         f.write(TEMPLATE.format(description=description or "TODO: describe this spell."))
