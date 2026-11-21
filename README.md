@@ -71,9 +71,12 @@ run, just slower.
 spl bump
 ```
 
-This moves every spell to the newest `nixpkgs-unstable` commit. A workflow
-runs it every Monday and opens a pull request. The tests run on that pull
-request, so you see whether an update breaks a spell before you merge it.
+This moves every spell to the newest `nixpkgs-unstable` commit. Nothing runs
+it for you: run it when you want newer packages, then open a pull request. The
+tests run on that pull request, on Linux and macOS, so you see whether the
+update breaks a spell before you merge it.
+
+`spl bump <commit>` moves to a commit you pick, for example to go back.
 
 ## Writing a spell
 
