@@ -18,15 +18,36 @@
 #
 # Written for bash 3.2, the one macOS ships.
 
-# The real nix-shell: the first one on PATH that is not this file.
+# True for this file and for a copy of it in another folder. Line 2 above is
+# the mark that tells them apart from the real nix-shell.
+is_this_wrapper() {
+  local line
+  { IFS= read -r line && IFS= read -r line; } <"$1" 2>/dev/null
+  [[ $line == "# nix-shell, with a memory." ]]
+}
+
+# The real nix-shell: the next one on PATH after this file that is not a copy
+# of this wrapper. Both rules are needed. Without them, two copies on PATH
+# take each other for the real one and call each other forever.
 real=
+fallback=
+after_this_file=
 IFS=: read -ra folders <<<"$PATH"
 for folder in "${folders[@]}"; do
-  if [[ -x $folder/nix-shell && ! $folder/nix-shell -ef $0 ]]; then
-    real=$folder/nix-shell
-    break
+  candidate=$folder/nix-shell
+  if [[ $candidate -ef $0 ]]; then
+    after_this_file=yes
+  elif [[ -x $candidate ]] && ! is_this_wrapper "$candidate"; then
+    fallback=${fallback:-$candidate}
+    if [[ -n $after_this_file ]]; then
+      real=$candidate
+      break
+    fi
   fi
 done
+# This file is not on PATH (it was started by its full path), or nothing
+# comes after it: take the first other nix-shell.
+real=${real:-$fallback}
 if [[ -z $real ]]; then
   echo "nix-shell: the real nix-shell is not on PATH" >&2
   exit 127
