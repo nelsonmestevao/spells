@@ -1,63 +1,141 @@
-#!/usr/bin/env bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p gum openssh
+#! nix-shell -i bash
 
 set -Eeuo pipefail
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
-VERSION=0.9.0
+VERSION=1.0.0
 
-# Print a help section title in bold capitals. (tr, not ${*^^}: this runs on
-# the bash 3.2 that macOS ships, too.)
+GREEN="\033[1;32m"
+RESET="\033[0m"
+
+# Print a help section title in bold capitals.
 function help_section() {
   printf '\033[1m%s\033[0m' "$(echo "$*" | tr '[:lower:]' '[:upper:]')"
 }
 
 function display_help() {
   cat <<EOF
+  Make a new SSH key and copy its public half to the clipboard.
+
   $(help_section Usage)
-    ${PROGRAM} [OPTIONS] rsa [<comment>]
+    ${PROGRAM}                            Ask for the type, comment and file.
+    ${PROGRAM} (ed25519 | rsa) [<comment>]  Ask nothing but the passphrase.
 
   $(help_section Options)
     -h, --help      Show this screen.
     -v, --version   Show version.
 
   $(help_section Examples)
+    ${PROGRAM}
+    ${PROGRAM} ed25519
     ${PROGRAM} rsa email@example.com
+
+  The key goes in ~/.ssh/id_<type>. The comment is <os>@<host> unless you
+  give one, such as macos@laptop. If the file is there already, ${PROGRAM}
+  asks before it replaces it.
+
+  $(help_section "Needs from your system")
+    A clipboard tool (wl-copy, pbcopy or xsel). Without one, ${PROGRAM}
+    prints the public key instead.
 EOF
 }
 
-function generate_new_key() {
-  local COMMENT=$1
-  local SSH_PUB="$HOME/.ssh/id_rsa.pub"
-
-  #TODO: add select to generate multiple key types
-  ssh-keygen -t rsa -b 4096 -C "$COMMENT"
-
-  if command -v xclip >/dev/null 2>&1; then
-    xclip -selection clipboard <"$SSH_PUB"
-  elif command -v pbcopy >/dev/null 2>&1; then
-    pbcopy <"$SSH_PUB"
-  elif command -v xsel >/dev/null 2>&1; then
-    xsel --clipboard <"$SSH_PUB"
-  elif command -v wl-copy >/dev/null 2>&1; then
-    cat "$SSH_PUB" | wl-copy
-  else
-    echo "[ssh]: xclip, pbcopy, xsel and wl-copy not found, you need to copy manually the following key"
-    cat "$SSH_PUB"
-    exit 1
+# The comment the key gets when you give none: the system and the machine,
+# such as macos@laptop or nixos@desktop.
+function default_comment() {
+  local os host
+  if [[ $(uname -s) == Darwin ]]; then
+    os=macos
+  elif [[ -r /etc/os-release ]]; then
+    os=$(sed -n 's/^ID=//p' /etc/os-release | tr -d '"')
   fi
-
-  echo "[ssh]: SSH public key copied into the clipboard"
+  [[ -n ${os-} ]] || os=$(uname -s | tr '[:upper:]' '[:lower:]')
+  host=$(uname -n)
+  echo "$os@${host%%.*}"
 }
 
-case ${1:-error} in
+# Copy what comes in to the clipboard, with the tool this system has.
+function to_clipboard() {
+  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-copy >/dev/null; then
+    wl-copy
+  elif command -v pbcopy >/dev/null; then
+    pbcopy
+  elif command -v xsel >/dev/null; then
+    xsel --input --clipboard
+  else
+    return 1
+  fi
+}
+
+# Show a path with ~ in place of the home folder.
+function short() {
+  echo "${1/#$HOME/\~}"
+}
+
+# generate_new_key <type> <comment> <file>
+function generate_new_key() {
+  local type=$1 comment=$2 file=$3
+
+  if [[ -e $file || -e $file.pub ]]; then
+    gum confirm --default=false "$(short "$file") is there already. Replace it?" || {
+      local answer=$?
+      echo "Kept $(short "$file") as it is."
+      exit "$answer"
+    }
+  fi
+
+  # shellcheck disable=SC2174  # only the folder that holds the key needs 700
+  mkdir -p -m 700 "$(dirname "$file")"
+
+  # ssh-keygen asks for the passphrase on the terminal, so it never shows up in
+  # the process list. It keeps the old key until the new one is ready. The "y"
+  # answers its own "Overwrite (y/n)?", which was already asked above, and
+  # stdout holds nothing else with -q.
+  case $type in
+    ed25519) set -- -t ed25519 ;;
+    rsa) set -- -t rsa -b 4096 ;;
+  esac
+  ssh-keygen -q "$@" -C "$comment" -f "$file" <<<y >/dev/null
+
+  echo -e "Saved $(short "$file") $GREEN✓$RESET"
+  ssh-keygen -l -f "$file.pub"
+
+  if to_clipboard <"$file.pub"; then
+    echo -e "$(short "$file.pub") copied to the clipboard $GREEN✓$RESET"
+  else
+    echo "Found no clipboard tool (wl-copy, pbcopy or xsel). Here is the public key:"
+    cat "$file.pub"
+  fi
+}
+
+# Ask for the type, comment and file, with good answers filled in.
+function ask_and_generate() {
+  local type comment default_file file
+  type=$(gum choose --header "Key type" "ed25519" "rsa (4096 bits, for old servers)")
+  type=${type%% *}
+  comment=$(gum input --header "Comment" --value "$(default_comment)")
+  # shellcheck disable=SC2088  # shown with ~ on purpose, expanded below
+  default_file="~/.ssh/id_$type"
+  file=$(gum input --header "File" --value "$default_file")
+  file=${file:-$default_file}
+  generate_new_key "$type" "$comment" "${file/#\~/$HOME}"
+}
+
+case ${1-} in
+  "")
+    ask_and_generate
+    ;;
   -h | --help)
     display_help
     ;;
   -v | --version)
     echo "${PROGRAM} v${VERSION}"
     ;;
-  rsa)
-    generate_new_key "${2:-$(whoami)@$(uname -n)}"
+  ed25519 | rsa)
+    generate_new_key "$1" "${2:-$(default_comment)}" "$HOME/.ssh/id_$1"
     ;;
   *)
     display_help >&2
