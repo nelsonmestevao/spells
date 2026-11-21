@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Run every test script in this folder. Exits non-zero if any of them failed.
+
+cd "$(dirname "$0")" || exit 1
+
+failed=0
+for test in ./*.sh; do
+  echo "== ${test#./}"
+  "$test" || failed=1
+  echo
+done
+exit $failed

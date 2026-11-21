@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Stand-in for systemctl in tests. Keeps the state of the unit in a file.
+
+state_file=${STAND_IN_STATE:?}/systemctl
+[[ -f $state_file ]] || echo active >"$state_file"
+
+case $1 in
+  is-active)
+    cat "$state_file"
+    [[ $(cat "$state_file") == active ]] || exit 3
+    ;;
+  start) echo active >"$state_file" ;;
+  stop) echo inactive >"$state_file" ;;
+  *)
+    echo "stand-in systemctl: unknown command $1" >&2
+    exit 1
+    ;;
+esac
