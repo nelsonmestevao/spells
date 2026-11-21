@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Stand-in for sudo in tests. Runs the command as the current user.
+
+exec "$@"
