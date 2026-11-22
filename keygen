@@ -94,11 +94,16 @@ function generate_new_key() {
   # the process list. It keeps the old key until the new one is ready. The "y"
   # answers its own "Overwrite (y/n)?", which was already asked above, and
   # stdout holds nothing else with -q.
+  #
+  # With "y" as its input, ssh-keygen no longer sees a terminal there. On a
+  # desktop it would then ask for the passphrase with $SSH_ASKPASS, a window
+  # such as seahorse's. SSH_ASKPASS_REQUIRE=never keeps the question in the
+  # terminal.
   case $type in
     ed25519) set -- -t ed25519 ;;
     rsa) set -- -t rsa -b 4096 ;;
   esac
-  ssh-keygen -q "$@" -C "$comment" -f "$file" <<<y >/dev/null
+  SSH_ASKPASS_REQUIRE=never ssh-keygen -q "$@" -C "$comment" -f "$file" <<<y >/dev/null
 
   echo -e "Saved $(short "$file") $GREEN✓$RESET"
   ssh-keygen -l -f "$file.pub"
