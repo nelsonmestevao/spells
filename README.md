@@ -114,6 +114,20 @@ spl new my-spell
 This makes `my-spell` from a template, with the header above, and opens it in
 your editor. `spl edit` opens an existing spell.
 
+### Versions
+
+A spell with a `--version` option carries its own number. Bump it in the pull
+request that changes the spell:
+
+| The change | For example | The number |
+|---|---|---|
+| A new feature | a new option, one more system it works on | `0.3.2` becomes `0.4.0` |
+| A fix | a crash, a wrong answer | `0.3.2` becomes `0.3.3` |
+| A break in how you call it | an option renamed or removed | `0.3.2` becomes `1.0.0` |
+| Nothing you can see from outside | a tidy-up, a newer nixpkgs | stays as it is |
+
+A new spell starts at `0.1.0`.
+
 ## Tests
 
 ```sh

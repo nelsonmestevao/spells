@@ -72,7 +72,7 @@ for spell in caffeine cdoc chtml cpdf cxls excoveralls-report firewall fulldocte
   expect "Usage:" "$spell" --help
   expect "Usage:" first_line "$spell" --nope
 done
-expect "hexdiff v0.1.0" hexdiff --version
+expect "hexdiff v" hexdiff --version
 
 # --- small bash spells -------------------------------------------------------
 expect "< hello there >" cowecho hello there
@@ -85,7 +85,7 @@ expect "$(curl --silent --fail --location https://channels.nixos.org/nixos-26.05
 expect "Usage:" get_nix_channel_revision
 
 expect "USAGE" yt2mp3 --help
-expect "yt2mp3 v0.1.0" yt2mp3 --version
+expect "yt2mp3 v" yt2mp3 --version
 expect "unknown option: --nope" yt2mp3 --nope
 
 expect "█" qrcode https://example.com
@@ -401,7 +401,7 @@ printf '{\n  "buffer_font_size": 18,\n  "terminal": {\n    "font_size": 16,\n  }
 printf 'background-opacity = 0.6\nfont-size = 16\n' >"$DOTFILES/home/programs/ghostty/config"
 
 expect "USAGE" mode --help
-expect "mode v0.5.1" mode --version
+expect "mode v" mode --version
 expect "Changed to mode demo!" with_stand_ins mode demo
 if [[ $OSTYPE == darwin* ]]; then
   expect "notifications: not on macOS, left as they are" with_stand_ins mode chill
@@ -416,10 +416,10 @@ expect "chill" with_stand_ins mode status
 
 # --- bash_color and keygen ---------------------------------------------------
 expect "USAGE" bash_color --help
-expect "bash_color v0.5.0" bash_color --version
+expect "bash_color v" bash_color --version
 expect " TEST " bash_color 255 0 0
 expect "USAGE" keygen --help
-expect "keygen v1.0.0" keygen --version
+expect "keygen v" keygen --version
 expect "USAGE" keygen nope
 
 # --- git sync-branches and git sync-worktrees --------------------------------

@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
-VERSION=1.0.0
+VERSION=1.0.1
 
 GREEN="\033[1;32m"
 RESET="\033[0m"
