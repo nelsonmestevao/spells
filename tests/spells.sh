@@ -116,13 +116,16 @@ expect "< hello >" env TERM=xterm showIt hello
 
 # --- spl ---------------------------------------------------------------------
 # spl works on the folder it is in, so it gets a folder of its own to change.
+# A new spell loads the shared helpers from the lib folder next to it.
 mkdir own
 cp "$SPELLS/spl" "$SPELLS/cowecho" own/
+cp -R "$SPELLS/lib" own/
 git init --quiet own
 pinned=$(grep -oE '[0-9a-f]{40}' own/cowecho)
 
 expect "Created spell 'demo'" env EDITOR=true own/spl new demo --description "Say hello."
 expect "Say hello." own/demo --help
+expect "demo v0.1.0" own/demo --version
 expect "Usage:" first_line own/demo --nope
 expect "already uses nixpkgs $pinned" own/spl bump "$pinned"
 expect "is not a full commit hash" own/spl bump abc123
@@ -191,6 +194,41 @@ in_dir hex-on-master git commit --quiet --message "add mix.lock"
 printf "$lock_line" 1.4.4 >hex-on-master/mix.lock
 
 expect "https://diff.hex.pm/diff/jason/1.4.1..1.4.4" in_dir hex-on-master hexdiff
+
+# --- the shared helpers (lib/spellbook.xsh) ----------------------------------
+# A small spell in tests/fixtures calls one helper at a time.
+helper=$SPELLS/tests/fixtures/spellbook-demo
+
+# exit_status <command...>: run it quietly and print how it ended.
+exit_status() {
+  "$@" >/dev/null 2>&1
+  echo "exit status $?"
+}
+
+expect "all good ✓" "$helper" success "all good"
+expect "careful" "$helper" log_warn careful
+expect "by the way" "$helper" log_info "by the way"
+
+# failure says so and carries on. error says so and stops.
+expect "and carried on" "$helper" failure "went wrong"
+expect "went wrong ✗" "$helper" failure "went wrong"
+expect "stopped ✗" first_line "$helper" error stopped
+expect "exit status 1" exit_status "$helper" error stopped
+
+expect "spellbook-demo v0.1.0" "$helper" --version
+expect "Usage:" first_line "$helper" --nope
+
+expect "worked: True" "$helper" spin Waiting true
+expect "worked: False" "$helper" spin Waiting false
+
+# step is spin, and then a line that says how it went.
+expect "Waiting ✓" "$helper" step Waiting true
+expect "Waiting ✗" "$helper" step Waiting false
+expect "worked: False" "$helper" step Waiting false
+
+# Neither repo has a remote, so the answer is the branch that exists.
+expect "main" in_dir hex "$helper" default_branch
+expect "master" in_dir hex-on-master "$helper" default_branch
 
 # --- git-rank and git-joke ---------------------------------------------------
 # git-rank only prints when the name written in it is among the authors.
