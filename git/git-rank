@@ -3,6 +3,8 @@
 #! nix-shell -p perl
 #! nix-shell -i sh
 
+# Rank the authors of a repo by commits or by lines, and show your place.
+
 case ${1:---by-commit} in
   --by-line | --by-lines)
     git ls-files -z |

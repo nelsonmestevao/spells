@@ -1,4 +1,5 @@
 #!/bin/sh
+# Show the name and email that a commit made here would carry.
 
 # git-whoami is an additional Git command that tells you what author and
 # committer information would (probably) be used for a commit. This is

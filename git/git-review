@@ -3,5 +3,7 @@
 #! nix-shell -p fzf
 #! nix-shell -i bash
 
+# Pick changed files from a list, with each file's diff as the preview.
+
 git diff "$@" --name-only | fzf -m --ansi \
   --preview "git diff $* --color=always -- {-1}"

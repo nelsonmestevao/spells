@@ -3,4 +3,6 @@
 #! nix-shell -p delta
 #! nix-shell -i sh
 
+# Show two files side by side, with their differences marked.
+
 delta -s "$@"

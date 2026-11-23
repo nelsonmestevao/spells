@@ -3,6 +3,8 @@
 #! nix-shell -p neo-cowsay
 #! nix-shell -i sh
 
-# You might want to use --super option
+# Say something as a random cow, in bold and in colour.
+#
+# You might want to use the --super option.
 
 cowsay --random --aurora --bold "$@"

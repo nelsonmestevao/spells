@@ -3,6 +3,8 @@
 #! nix-shell -p yt-dlp ffmpeg
 #! nix-shell -i bash
 
+# Download videos with yt-dlp and keep the sound as MP3 files.
+
 set -Eeuo pipefail
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")

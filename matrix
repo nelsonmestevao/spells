@@ -3,6 +3,8 @@
 #! nix-shell -p ncurses
 #! nix-shell -i bash
 
+# Rain letters down the terminal, as in The Matrix, until you press a key.
+
 lines=$(tput lines)
 cols=$(tput cols)
 

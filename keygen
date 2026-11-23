@@ -3,6 +3,8 @@
 #! nix-shell -p gum openssh
 #! nix-shell -i bash
 
+# Make a new SSH key and copy its public half to the clipboard.
+
 set -Eeuo pipefail
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")

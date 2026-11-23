@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Type git commands at a prompt, without the word git.
+
 git version
 while true; do
   # Current branch

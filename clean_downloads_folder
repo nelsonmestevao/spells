@@ -3,6 +3,7 @@
 #! nix-shell -p python3
 #! nix-shell -i python3
 # -*- coding: utf-8 -*-
+"""Sort the files in ~/Downloads into folders by kind: Images, Documents, Music and so on."""
 
 import os, sys
 
