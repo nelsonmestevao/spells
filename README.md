@@ -93,6 +93,6 @@ your editor. `spl edit` opens an existing spell.
 tests/run
 ```
 
-This runs every script in `tests/`. GitHub Actions runs the same command on
-Linux and macOS for every pull request, once as it is and once through
-`shims/nix-shell`.
+This runs every script in `tests/`. GitHub Actions runs the same command for
+every pull request: through `shims/nix-shell` on Linux and macOS, and with
+plain `nix-shell` on Linux.

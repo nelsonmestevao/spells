@@ -15,15 +15,26 @@ concurrency:
 
 jobs:
   spells:
-    name: spells (${{ matrix.os }})
+    name: spells (${{ matrix.os }}, ${{ matrix.nix-shell }} nix-shell)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # Plain nix-shell starts nix for every check. That is the slow pass:
+        # 5 minutes on Linux, 8 on macOS. The cache wrapper starts nix once for
+        # each header, and so still tests every header. So the plain pass runs
+        # on one system, and the wrapper pass on both.
+        include:
+          - os: ubuntu-latest
+            nix-shell: plain
+          - os: ubuntu-latest
+            nix-shell: cached
+          - os: macos-latest
+            nix-shell: cached
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: cachix/install-nix-action@3dc140bfc76c49fbd4dd958429132e3746bcb086 # v31.11.5
+      - name: Put the cache wrapper first on PATH
+        if: matrix.nix-shell == 'cached'
+        run: echo "$PWD/shims" >>"$GITHUB_PATH"
       - run: tests/run
-      - name: Run the tests again through the cache wrapper
-        run: PATH="$PWD/shims:$PATH" tests/run
