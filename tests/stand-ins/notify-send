@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Stand-in for notify-send in tests. Saves the text of the notification in a
+# file, so the tests never show one on your desktop.
+
+echo "${!#}" >"${STAND_IN_STATE:?}/notification"
