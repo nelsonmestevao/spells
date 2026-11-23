@@ -230,6 +230,15 @@ expect "worked: False" "$helper" step Waiting false
 expect "main" in_dir hex "$helper" default_branch
 expect "master" in_dir hex-on-master "$helper" default_branch
 
+# A spell that loads the shared helpers must not keep its own copy of one.
+# Copies drift apart, and the copy would win over the import.
+shared=$(sed -n 's/^def \([a-z_]*\)(.*/\1/p' "$SPELLS/lib/spellbook.xsh" | paste -sd '|' -)
+own_copies() {
+  grep -IlE '^from spellbook import' "$SPELLS"/* "$SPELLS"/git/* 2>/dev/null |
+    while read -r spell; do grep -HnE "^def ($shared)\\(" "$spell"; done | grep . || echo "no copies"
+}
+expect "no copies" own_copies
+
 # --- git-rank and git-joke ---------------------------------------------------
 # git-rank only prints when the name written in it is among the authors.
 git init --quiet --initial-branch main rank
