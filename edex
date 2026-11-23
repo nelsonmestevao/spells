@@ -2,5 +2,7 @@
 
 cd "$(dirname "$0")" || exit 1
 
+# The single quotes are on purpose: the shell that nix-shell starts reads this.
+# shellcheck disable=SC2016
 nix-shell -p xorg.libxshmfence --run \
 'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(nix eval --raw nixpkgs#xorg.libxshmfence)/lib appimage-run ./eDEX-UI-Linux-x86_64.AppImage'

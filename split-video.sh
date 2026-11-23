@@ -52,8 +52,11 @@ echo "Duration of source video: $DURATION"
 
 # Until the duration of all partial videos has reached the duration of the source video
 while [[ $CUR_DURATION -lt $DURATION ]]; do
-  # Encode next part
+  # Encode next part. FFMPEG_ARGS holds several arguments in one string, so
+  # it stays unquoted.
+  # shellcheck disable=SC2086
   echo ffmpeg -i "$FILE" -ss "$CUR_DURATION" -fs "$SIZELIMIT" $FFMPEG_ARGS "$NEXTFILENAME"
+  # shellcheck disable=SC2086
   ffmpeg -ss "$CUR_DURATION" -i "$FILE" -fs "$SIZELIMIT" $FFMPEG_ARGS "$NEXTFILENAME"
 
   # Duration of the new part

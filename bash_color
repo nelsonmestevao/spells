@@ -29,10 +29,10 @@ function print_color() {
 
   echo -en "\e[48;2;$1;$2;$3m$TEXT\e[0m"
   echo -n ":  "
-  echo "\e[48;2;$1;$2;$3m$TEXT\e[0m"
+  printf '%s\n' "\e[48;2;$1;$2;$3m$TEXT\e[0m"
   echo -en "\e[38;2;$1;$2;$3m$TEXT\e[0m"
   echo -n ":  "
-  echo "\e[38;2;$1;$2;$3m$TEXT\e[0m"
+  printf '%s\n' "\e[38;2;$1;$2;$3m$TEXT\e[0m"
 }
 
 case ${1:-noption} in

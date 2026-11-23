@@ -8,6 +8,8 @@
 lines=$(tput lines)
 cols=$(tput cols)
 
+# This is awk code, and awk is the one that reads $1 and the like.
+# shellcheck disable=SC2016
 awkscript='
   {
     lines=$1
@@ -56,8 +58,8 @@ if [[ -t 0 ]]; then
 fi
 
 keypress=''
-while [ "x$keypress" = "x" ]; do
-  echo $lines $cols $((RANDOM % cols)) $((RANDOM % 2))
+while [ -z "$keypress" ]; do
+  echo "$lines" "$cols" $((RANDOM % cols)) $((RANDOM % 2))
   sleep 0.04
   keypress="$(cat -v)"
 done | awk "$awkscript"

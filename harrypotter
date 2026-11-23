@@ -25,9 +25,9 @@ for D in "${DIALOG[@]}"; do
   clear
   echo -e "\n\n"
   if [[ $D == "HARRY:"* ]]; then
-    pv -qL6 <<<$'\033[1;33m'$D$'\e[37m'
+    pv -qL6 <<<$'\033[1;33m'"$D"$'\e[37m'
   else
-    pv -qL9 <<<$'\033[1;32m'$D$'\e[37m'
+    pv -qL9 <<<$'\033[1;32m'"$D"$'\e[37m'
   fi
   sleep 3
 done
