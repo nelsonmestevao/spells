@@ -174,6 +174,10 @@ expect "git browse  Open this repo in the browser." own/spl list
 # does not.
 undescribed() { spl list | grep -vE '  [^ ]' || echo "none"; }
 expect "none" undescribed
+
+# `spl warm` builds each environment once. This folder has three: the one of
+# spl (the header in its template counts too), of demo and of cowecho.
+expect "All 3 environments are ready" own/spl warm
 expect "already uses nixpkgs $pinned" own/spl bump "$pinned"
 expect "is not a full commit hash" own/spl bump abc123
 

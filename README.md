@@ -108,6 +108,17 @@ update breaks a spell before you merge it.
 
 `spl bump <commit>` moves to a commit you pick, for example to go back.
 
+After a bump, the first run of each spell downloads its new packages. To get
+them all in one go:
+
+```sh
+spl warm
+```
+
+It builds the environment of every spell, and fills the cache of
+`shims/nix-shell` when that is on your `PATH`. A spell made for another system
+cannot be built here: `spl warm` names it and says why.
+
 ## Writing a spell
 
 ```sh
