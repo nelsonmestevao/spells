@@ -268,6 +268,11 @@ expect_on_screen "$TMP/repo"
 in_terminal wait:navigate C-c -- herd
 expect_exit 130
 
+# harrypotter types a dialog for over a minute. Ctrl-C must end all of it,
+# not only the line on the screen.
+in_terminal "wait:Harry Potter" C-c -- harrypotter
+expect_exit 130
+
 # Pick the branch "one" (x marks it), then the command "delete".
 in_terminal wait:navigate Down x Enter wait:rebase Down Enter -- git-branch-manager
 expect_exit 0
