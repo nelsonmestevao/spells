@@ -1,4 +1,5 @@
 #!/bin/sh
+# In an emergency, save all your work to the remotes.
 
 VERSION="0.2.4"
 BRANCH_PREFIX="fire"

@@ -3,6 +3,8 @@
 #! nix-shell -p bash gnused gnugrep
 #! nix-shell -i bash
 
+# Switch the screen set-up: chill for working alone, demo for showing your screen.
+
 set -Eeuo pipefail
 shopt -s inherit_errexit
 

@@ -3,6 +3,8 @@
 #! nix-shell -p nodejs
 #! nix-shell -i bash
 
+# Review changes in the browser with difit.
+#
 # Usage:
 #   review                      # commits on this branch since it left main/master,
 #                               # or uncommitted changes when there are none

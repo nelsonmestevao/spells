@@ -3,4 +3,6 @@
 #! nix-shell -p curl
 #! nix-shell -i sh
 
+# Print a random git joke.
+
 curl -s https://raw.githubusercontent.com/EugeneKay/git-jokes/lulz/Jokes.txt | awk 'BEGIN { srand() } int(rand() * NR) == 0 { x = $0 } END { print x }'

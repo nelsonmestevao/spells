@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+# Change the last commit until its hash matches a pattern.
+#
 # source: https://bitbucket.org/tpettersen/git-sham/src/master/git-sham
 
 if [ -z "$1" ]; then

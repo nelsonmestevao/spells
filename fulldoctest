@@ -3,8 +3,9 @@
 #! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
 #! nix-shell -i xonsh
 """
-Run doctest inside a nix-shell that provides GHC, QuickCheck and doctest,
-ignoring cabal/GHC environment files.
+Run doctest on Haskell files, with GHC, QuickCheck and doctest from nix.
+
+It ignores cabal and GHC environment files.
 
 Usage:
   {program} [options] [-p <pkg>]... [<file>...] [-- <doctest-arg>...]

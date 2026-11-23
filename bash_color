@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Show a colour in the terminal, from its red, green and blue values.
 
 set -Eeuo pipefail
 

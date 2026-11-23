@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
+# List the 20 files changed most often in the last 12 months.
 
 git log --format=format: --name-only --since=12.month | grep -E -v '^$' | sort | uniq -c | sort -nr | head -20
