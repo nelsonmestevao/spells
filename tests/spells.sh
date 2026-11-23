@@ -397,10 +397,19 @@ mkdir -p coverage/cover
 cat >coverage/cover/excoveralls.html <<'HTML'
 <span class="cov high">100.0</span> <a href="#lib/app/a.ex"><span class="dirname">lib/app/</span><span class="basename">a.ex</span></a>
 <span class="cov none">0.0</span> <a href="#lib/app/b.ex"><span class="dirname">lib/app/</span><span class="basename">b.ex</span></a>
+<span class="cov medium">50.0</span> <a href="#lib/app/orders/c.ex"><span class="dirname">lib/app/orders/</span><span class="basename">c.ex</span></a>
+<span class="cov high">80.0</span> <a href="#lib/app_web/live/d.ex"><span class="dirname">lib/app_web/live/</span><span class="basename">d.ex</span></a>
+<span class="cov high">90.0</span> <a href="#lib/mix/tasks/e.ex"><span class="dirname">lib/mix/tasks/</span><span class="basename">e.ex</span></a>
 HTML
 
-expect "2 files, 50.0% average coverage" in_dir coverage excoveralls-report
+expect "5 files, 64.0% average coverage" in_dir coverage excoveralls-report
 expect "lib/app/a.ex,100.0,high" cat coverage/cover/coverage_report.csv
+# Files are grouped by the folder under the app's own folder, whatever the
+# app is called. The web layer is one group.
+expect "| (root) | 2 | 50.0% | 0.0% | 100.0% |" cat coverage/cover/coverage_report.md
+expect "| orders/ | 1 | 50.0% |" cat coverage/cover/coverage_report.md
+expect "| web/ | 1 | 80.0% |" cat coverage/cover/coverage_report.md
+expect "| mix/ | 1 | 90.0% |" cat coverage/cover/coverage_report.md
 
 # --- fulldoctest (only what it would run; the real thing downloads GHC) ------
 expect "haskellPackages.doctest --run" fulldoctest --dry-run -p gloss Demo.hs -- --verbose
