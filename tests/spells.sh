@@ -157,6 +157,18 @@ expect "Created spell 'demo'" env EDITOR=true own/spl new demo --description "Sa
 expect "Say hello." own/demo --help
 expect "demo v0.1.0" own/demo --version
 expect "Usage:" first_line own/demo --nope
+
+# `spl list` shows each spell with the line that says what it does. A spell in
+# git/ is listed the way you run it.
+mkdir own/git
+cp "$SPELLS/git/git-browse" own/git/
+expect "demo        Say hello." own/spl list
+expect "git browse  Open this repo in the browser." own/spl list
+
+# Every spell says what it does. `spl list` prints a bare name for one that
+# does not.
+undescribed() { spl list | grep -vE '  [^ ]' || echo "none"; }
+expect "none" undescribed
 expect "already uses nixpkgs $pinned" own/spl bump "$pinned"
 expect "is not a full commit hash" own/spl bump abc123
 
