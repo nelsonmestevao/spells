@@ -1,7 +1,43 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+# Say how many days are left until Christmas, and play a Christmas song.
+#
+# Needs from your system: notify-send and pw-play (a Linux desktop).
 
-TODAY=$(date +"%j")
-CHRISTMAS=$(date -d 25-Dec +"%j")
+set -euo pipefail
 
-XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send -t 16000 "There are $((CHRISTMAS - TODAY)) days left until Christmas!"
-XDG_RUNTIME_DIR=/run/user/$(id -u) pw-play ~/.spells/songs/christmas-song.wav
+SONG=$(cd "$(dirname "$0")" && pwd)/songs/christmas-song.wav
+
+# 25 December is day 359 of the year, or day 360 in a leap year.
+christmas_day_in() {
+  local year=$1
+  if ((year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))); then
+    echo 360
+  else
+    echo 359
+  fi
+}
+
+year=$(date +%Y)
+# date pads the day of the year with zeros ("032"). The 10# stops bash from
+# reading that as an octal number.
+today=$((10#$(date +%j)))
+
+days_left=$(($(christmas_day_in "$year") - today))
+if ((days_left < 0)); then
+  # Christmas has passed. Count to the end of this year, then to the next one.
+  last_day=$(($(christmas_day_in "$year") + 6))
+  days_left=$((last_day - today + $(christmas_day_in $((year + 1)))))
+fi
+
+case $days_left in
+  0) message="Merry Christmas!" ;;
+  1) message="There is 1 day left until Christmas!" ;;
+  *) message="There are $days_left days left until Christmas!" ;;
+esac
+
+# A timer or cron job has no XDG_RUNTIME_DIR, and without it the notification
+# and the sound cannot find your desktop session.
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+
+notify-send -t 16000 "$message"
+pw-play "$SONG"
