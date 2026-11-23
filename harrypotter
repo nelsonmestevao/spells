@@ -2,6 +2,13 @@
 #! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
 #! nix-shell -p pv ncurses
 #! nix-shell -i bash
+
+# Type out the scene where Harry writes in Tom Riddle's diary.
+
+# Ctrl-C alone only stops the line that pv is typing, and bash goes on to the
+# next one. This ends the whole spell, with the colour put back.
+trap 'printf "\033[0m\n"; exit 130' INT
+
 clear
 
 DIALOG=(
