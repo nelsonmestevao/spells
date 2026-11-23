@@ -6,7 +6,7 @@
 set -Eeuo pipefail
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
-VERSION=0.1.0
+VERSION=0.1.1
 
 # Print a help section title in bold capitals.
 function help_section() {
