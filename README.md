@@ -66,6 +66,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "li
 from spellbook import error, log_info, log_warn, parse_args, success
 ```
 
+`lib/processes.xsh` holds what `pscpu` and `psmem` share: the list of running
+processes, and the table of the biggest ones.
+
 A spell that does this needs the `lib` folder next to it. To use it on
 another machine, clone this repo there. The bash, sh and python spells are
 still one file each.

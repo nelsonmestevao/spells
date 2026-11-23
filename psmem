@@ -23,142 +23,22 @@ Needs from your system:
   ps.
 """
 
-from docopt import docopt, DocoptExit
-
 import os
-import re
 import sys
-import time
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+from spellbook import error, parse_args
+from processes import print_top
 
-RED="\033[31m"
-RESET="\033[0m"
-
-
-def error(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-    sys.exit(1)
-
-
-# What the lines are sorted by: "cpu" or "mem".
-SORT_BY = "mem"
-
-# macOS: the system's own ps, by its full path. The ps that nix puts on PATH
-# cannot read the memory of most processes. Its "comm" column is the full path
-# of the program.
-# Linux: "args" is the whole command line. Its first word is the program.
-if sys.platform == "darwin":
-    PS = ["/bin/ps", "-A", "-o", "pid=,user=,pcpu=,rss=,comm="]
-else:
-    PS = ["ps", "-A", "-o", "pid=,user=,pcpu=,rss=,args="]
-
-
-def name_of(program):
-    """The plain name of a program: 'firefox' for '/usr/lib/firefox/firefox'."""
-    name = os.path.basename(program)
-    # NixOS wraps programs and names them like ".firefox-wrapped".
-    return re.sub(r"^\.(.+)-wrapped$", r"\1", name)
-
-def app_of(program):
-    """The app a program belongs to: 'Google Chrome' for each of Chrome's helpers."""
-    inside_an_app = re.search(r"/([^/]+)\.app/", program)
-    if inside_an_app:
-        return inside_an_app.group(1)
-    return name_of(program)
-
-def cpu_right_now(seconds=0.5):
-    """Linux only: the share of one core each process used in the last half second.
-
-    ps on Linux reports the average since a process started, which says
-    little about now. /proc holds the CPU time used so far, so read it twice.
-    """
-    def cpu_time_used():
-        used = {}
-        for pid in filter(str.isdigit, os.listdir("/proc")):
-            try:
-                with open(f"/proc/{pid}/stat") as stat:
-                    fields = stat.read().rsplit(")", 1)[1].split()
-                used[int(pid)] = int(fields[11]) + int(fields[12])
-            except (OSError, IndexError, ValueError):
-                pass  # the process ended in the meantime
-        return used
-
-    before = cpu_time_used()
-    time.sleep(seconds)
-    after = cpu_time_used()
-
-    ticks_per_second = os.sysconf("SC_CLK_TCK")
-    return {
-        pid: (ticks - before.get(pid, ticks)) / ticks_per_second / seconds * 100
-        for pid, ticks in after.items()
-    }
-
-def processes():
-    """Every running process, as a dict with pid, user, cpu, mem (in KB), name and app."""
-    measured = cpu_right_now() if sys.platform == "linux" else {}
-
-    found = []
-    for line in $(@(PS)).splitlines():
-        fields = line.split(None, 4)
-        if len(fields) < 5:
-            continue
-        pid, user, cpu, mem, program = fields
-        if int(pid) == os.getpid():
-            continue  # this spell itself is not interesting
-        if sys.platform != "darwin":
-            program = program.split()[0]
-
-        found.append({
-            "pid": int(pid),
-            "user": user,
-            "cpu": measured.get(int(pid), float(cpu)),
-            "mem": int(mem),
-            "name": name_of(program),
-            "app": app_of(program),
-        })
-    return found
-
-def by_app(found):
-    """One entry per app, with the CPU and memory of its processes added up."""
-    apps = {}
-    for process in found:
-        app = apps.setdefault(process["app"], {"app": process["app"], "cpu": 0.0, "mem": 0, "count": 0})
-        app["cpu"] += process["cpu"]
-        app["mem"] += process["mem"]
-        app["count"] += 1
-    return list(apps.values())
-
-def size(kilobytes):
-    megabytes = kilobytes / 1024
-    if megabytes >= 1000:
-        return f"{megabytes / 1024:.1f} GB"
-    return f"{megabytes:.0f} MB"
 
 def main(args):
     if not args["-n"].isdigit():
         error(f"-n takes a number, not '{args['-n']}'")
 
-    rows = processes() if args["--processes"] else by_app(processes())
-    rows.sort(key=lambda row: row[SORT_BY], reverse=True)
-
-    if args["--processes"]:
-        print(f"{'MEM':>7}  {'CPU':>7}  {'PID':>6}  {'USER':<10}  NAME")
-        for row in rows[:int(args["-n"])]:
-            print(f"{size(row['mem']):>7}  {row['cpu']:>6.1f}%  {row['pid']:>6}  {row['user'][:10]:<10}  {row['name']}")
-    else:
-        print(f"{'MEM':>7}  {'CPU':>7}  {'PROCS':>5}  APP")
-        for row in rows[:int(args["-n"])]:
-            print(f"{size(row['mem']):>7}  {row['cpu']:>6.1f}%  {row['count']:>5}  {row['app']}")
+    print_top("mem", int(args["-n"]), args["--processes"])
 
 
 if __name__ == "__main__":
-    try:
-        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.2.0')
-    except DocoptExit as wrong_usage:
-        # xonsh takes docopt's exit for a crash and prints a traceback hint
-        # above the usage. A plain SystemExit prints only the usage.
-        sys.exit(wrong_usage.code)
-
-    main(arguments)
+    main(parse_args(__doc__, __file__, version="0.2.0"))
 
 # vim: ft=python
