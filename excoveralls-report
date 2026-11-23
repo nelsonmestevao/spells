@@ -21,19 +21,14 @@ Options:
   -v --version  Show version.
 """
 
-from docopt import docopt, DocoptExit
-
 import os
 import re
 import sys
 from collections import defaultdict
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+from spellbook import RED, GREEN, YELLOW, BLUE, RESET, error, log_info, parse_args, success
 
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-RESET="\033[0m"
 
 PATTERN = re.compile(
     r"<span class=.cov\s+\w+.>([0-9.]+)</span>\s*"
@@ -43,19 +38,6 @@ PATTERN = re.compile(
 )
 
 BT = "`"
-
-
-def success(msg):
-    print(f"{msg} {GREEN}✓{RESET}")
-
-
-def error(msg):
-    print(f"{RED}✗{RESET} {msg}", file=sys.stderr)
-    sys.exit(1)
-
-
-def log_info(msg):
-    print(f"{BLUE}◆{RESET} {msg}")
 
 
 def parse_html(path):
@@ -233,13 +215,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    try:
-        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.1')
-    except DocoptExit as wrong_usage:
-        # xonsh takes docopt's exit for a crash and prints a traceback hint
-        # above the usage. A plain SystemExit prints only the usage.
-        sys.exit(wrong_usage.code)
-
-    main(arguments)
+    main(parse_args(__doc__, __file__, version="0.1.1"))
 
 # vim: ft=python
