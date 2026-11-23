@@ -28,10 +28,14 @@ import os
 import signal
 import sys
 
-$GREEN="\033[1;32m"
-$RESET="\033[0m"
 
-# $RAISE_SUBPROC_ERROR = True
+GREEN="\033[32m"
+RESET="\033[0m"
+
+
+def success(msg):
+    print(f"{msg} {GREEN}✓{RESET}")
+
 
 MACOS = sys.platform == "darwin"
 
@@ -40,10 +44,10 @@ MACOS = sys.platform == "darwin"
 PID_FILE = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "caffeine.pid")
 
 def pick_status_interactively():
-  try:
-    return $(gum choose "on" "off").strip()
-  except CalledProcessError as cancelled:
-    sys.exit(cancelled.returncode)
+    try:
+        return $(gum choose "on" "off").strip()
+    except CalledProcessError as cancelled:
+        sys.exit(cancelled.returncode)
 
 def gsettings_get_caffeine_status():
     return $(gsettings get org.gnome.shell.extensions.caffeine cli-toggle).strip().lower()
@@ -86,16 +90,16 @@ def get_caffeine_status():
             return "off"
 
 def set_caffeine(status):
-  if MACOS:
-    macos_set_caffeine(status)
-  else:
-    match status:
-      case "on":
-        gsettings set org.gnome.shell.extensions.caffeine cli-toggle true
-      case "off":
-        gsettings set org.gnome.shell.extensions.caffeine cli-toggle false
+    if MACOS:
+        macos_set_caffeine(status)
+    else:
+        match status:
+            case "on":
+                gsettings set org.gnome.shell.extensions.caffeine cli-toggle true
+            case "off":
+                gsettings set org.gnome.shell.extensions.caffeine cli-toggle false
 
-  echo -e @(f"caffeine is {status}") "$GREEN✓$RESET"
+    success(f"caffeine is {status}")
 
 def main(args):
     if args["on"]:
