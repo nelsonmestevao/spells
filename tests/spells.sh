@@ -490,6 +490,31 @@ expect "font-size = 26" cat "$DOTFILES/home/programs/ghostty/config"
 expect "Changed to mode chill!" with_stand_ins mode chill
 expect "chill" with_stand_ins mode status
 
+# --- herd --prune ------------------------------------------------------------
+# Three pretend spaces: one whose folder is gone, one whose folder is there,
+# and one on another machine, where this computer cannot look.
+mkdir kept-space
+cat >"$STAND_IN_STATE/herdr-spaces.json" <<JSON
+{"spaces": [
+  {"id": "sp1", "name": "gone", "folder": "$TMP/no-such-folder", "machine": null},
+  {"id": "sp2", "name": "kept", "folder": "$TMP/kept-space", "machine": null},
+  {"id": "sp3", "name": "far", "folder": "/srv/no-such-folder", "machine": "vps"}
+]}
+JSON
+
+expect "Would close space gone" with_stand_ins herd --prune --dry-run
+expect "nothing closed" bash -c '[ -e "$STAND_IN_STATE/herdr-commands" ] || echo "nothing closed"'
+expect "Closed space gone" with_stand_ins herd --prune
+# Only the first space was closed, and without Herdr asking first.
+expect 'space.close {"id": "sp1", "confirmed": true}' cat "$STAND_IN_STATE/herdr-commands"
+expect "1 command" bash -c 'echo "$(grep -c . "$STAND_IN_STATE/herdr-commands") command"'
+# --prune takes no branch, and --dry-run only goes with --prune.
+expect "Usage:" first_line with_stand_ins herd some-branch --prune
+expect "Usage:" first_line with_stand_ins herd some-branch --dry-run
+
+rm "$STAND_IN_STATE/herdr-spaces.json"
+expect "Nothing to close" with_stand_ins herd --prune
+
 # --- bash_color and keygen ---------------------------------------------------
 expect "USAGE" bash_color --help
 expect "bash_color v" bash_color --version
