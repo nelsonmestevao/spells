@@ -21,42 +21,13 @@ Needs from your system:
   git.
 """
 
-from docopt import docopt, DocoptExit
-
 import os
 import re
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+from spellbook import default_branch, failure, log_info, log_warn, parse_args, spin, step, success
 
-RED="\033[31m"
-GREEN="\033[32m"
-YELLOW="\033[33m"
-BLUE="\033[34m"
-RESET="\033[0m"
-
-
-def success(msg):
-    print(f"{msg} {GREEN}✓{RESET}")
-
-def error(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-
-def execute(title, cmd):
-    if execute_command(title, cmd):
-        success(title)
-        return True
-    else:
-        error(title)
-        return False
-
-def execute_command(title, cmd):
-    return ![gum spin --align=right --title @(f"{title}...") --show-error -- @(cmd.split())]
-
-def log_warn(msg):
-    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
-
-def log_info(msg):
-    print(f"{BLUE}◆{RESET} {msg}")
 
 def list_worktrees():
     """
@@ -75,24 +46,11 @@ def list_worktrees():
             worktrees.append((path, branch))
     return worktrees
 
-def default_branch(remote):
-    """The remote's default branch: what its HEAD points at, or main, or master."""
-    head = !(git symbolic-ref --short @(f"refs/remotes/{remote}/HEAD"))
-    if head.returncode == 0:
-        return head.out.strip().removeprefix(f"{remote}/")
-
-    # A repo that was not cloned has no <remote>/HEAD. Look for the branch itself.
-    for name in ("main", "master"):
-        for ref in (f"refs/remotes/{remote}/{name}", f"refs/heads/{name}"):
-            if !(git show-ref --verify --quiet @(ref)).returncode == 0:
-                return name
-    return "main"
-
 def main(args):
     remote = args["--remote"]
     remote_branch = args["--branch"] or default_branch(remote)
 
-    execute(f"Fetching from {remote}", f"git fetch {remote}")
+    step(f"Fetching from {remote}", ["git", "fetch", remote])
 
     worktrees = list_worktrees()
 
@@ -108,13 +66,13 @@ def main(args):
         title = f"Syncing {branch}"
         os.chdir(path)
 
-        if not execute_command(title, f"git rebase {remote}/{remote_branch}"):
-            error(f"Failed to rebase {branch} onto {remote}/{remote_branch}")
-            execute(f"Aborting rebase for {branch}", "git rebase --abort")
+        if not spin(title, ["git", "rebase", f"{remote}/{remote_branch}"]):
+            failure(f"Failed to rebase {branch} onto {remote}/{remote_branch}")
+            step(f"Aborting rebase for {branch}", ["git", "rebase", "--abort"])
             continue
 
-        if not execute_command(title, f"git push --force-with-lease --force-if-includes"):
-            error(f"Failed to push {branch} onto {remote}/{remote_branch}")
+        if not spin(title, ["git", "push", "--force-with-lease", "--force-if-includes"]):
+            failure(f"Failed to push {branch} onto {remote}/{remote_branch}")
             continue
 
         success(title)
@@ -123,13 +81,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    try:
-        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.2')
-    except DocoptExit as wrong_usage:
-        # xonsh takes docopt's exit for a crash and prints a traceback hint
-        # above the usage. A plain SystemExit prints only the usage.
-        sys.exit(wrong_usage.code)
-
-    main(arguments)
+    main(parse_args(__doc__, __file__, version="0.1.2"))
 
 # vim: ft=python
