@@ -164,9 +164,10 @@ expect "exit 0" bash -c 'printf x | TERM=xterm matrix >/dev/null 2>&1; echo "exi
 
 # clean_downloads_folder sorts ~/Downloads, so it works on the pretend home.
 mkdir home/Downloads
-touch home/Downloads/photo.png home/Downloads/notes.pdf home/Downloads/unknown.xyz
+touch home/Downloads/photo.png home/Downloads/scan.bmp home/Downloads/notes.pdf home/Downloads/unknown.xyz
 with_pretend_home clean_downloads_folder
 expect "photo.png" ls home/Downloads/Images
+expect "scan.bmp" ls home/Downloads/Images
 expect "notes.pdf" ls home/Downloads/Documents
 expect "unknown.xyz" ls home/Downloads/Misc
 
