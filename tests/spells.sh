@@ -246,6 +246,46 @@ expect "2 Nelson Estevão" in_dir rank git-rank --by-line
 # Every joke has a space in it. This only checks that one arrives.
 expect " " git-joke
 
+# --- small git spells --------------------------------------------------------
+# The repo from above: three commits to one file, the last by Someone Else.
+expect "a line by Someone Else - Someone Else" in_dir rank git-branches
+expect "3 file" in_dir rank git-hotfiles
+expect "a line by Someone Else" bash -c 'cd rank && echo "log --oneline -1" | git-repl'
+expect "file" bash -c 'cd rank && echo ls | git-repl'
+
+expect "test <test@example.com>" in_dir rank git-whoami
+expect "Commit: someone else <test@example.com>" in_dir rank env GIT_COMMITTER_NAME="someone else" git-whoami
+
+# Two branches change the same line, so the merge stops in a conflict.
+git init --quiet --initial-branch main conflict
+(
+  cd conflict || exit 1
+  echo "once upon a time" >story.txt
+  git add story.txt
+  git commit --quiet --message "start the story"
+  git checkout --quiet -b other
+  echo "a long time ago" >story.txt
+  git commit --quiet --all --message "start it another way"
+  git checkout --quiet main
+  echo "in a land far away" >story.txt
+  git commit --quiet --all --message "start it a third way"
+)
+expect "no conflicts" bash -c 'cd conflict && [ -z "$(git-conflicts)" ] && echo "no conflicts"'
+in_dir conflict git merge --quiet other >/dev/null 2>&1
+expect "story.txt" in_dir conflict git-conflicts
+in_dir conflict git merge --abort
+
+# git-sham changes the last commit until its hash matches the pattern.
+expect "Usage: git-sham <pattern>" git-sham
+in_dir conflict git-sham '^a' >/dev/null
+expect "starts with a" bash -c 'cd conflict && case $(git rev-parse HEAD) in a*) echo "starts with a" ;; esac'
+
+# git-remove-file takes a file out of every commit. git filter-branch waits
+# ten seconds to warn about itself, unless told not to.
+expect "story.txt" in_dir conflict git log --format= --name-only
+FILTER_BRANCH_SQUELCH_WARNING=1 in_dir conflict git-remove-file story.txt >/dev/null 2>&1
+expect "no commit has it" bash -c 'cd conflict && [ -z "$(git log --format= --name-only)" ] && echo "no commit has it"'
+
 # --- jpg2jxl -----------------------------------------------------------------
 mkdir pics
 cp "$SPELLS/tests/fixtures/photo.jpg" pics/one.jpg
