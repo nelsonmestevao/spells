@@ -18,8 +18,6 @@ Options:
   -v --version           Show version.
 """
 
-from docopt import docopt, DocoptExit
-
 import contextlib
 import io
 import os
@@ -27,22 +25,13 @@ import sys
 
 import pymupdf
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+from spellbook import error, log_warn, parse_args
+
 # pymupdf4llm prints a tip about an optional package when it loads. The tip
 # is not part of any PDF, so it must stay out of the Markdown.
 with contextlib.redirect_stdout(io.StringIO()):
     import pymupdf4llm
-
-RED="\033[31m"
-YELLOW="\033[33m"
-RESET="\033[0m"
-
-
-def error(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-    sys.exit(1)
-
-def log_warn(msg):
-    print(f"{YELLOW}▲{RESET} {msg}", file=sys.stderr)
 
 
 def open_pdf(path):
@@ -75,12 +64,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    try:
-        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.1')
-    except DocoptExit as wrong_usage:
-        # xonsh takes docopt's exit for a crash and prints a traceback hint
-        # above the usage. A plain SystemExit prints only the usage.
-        sys.exit(wrong_usage.code)
+    arguments = parse_args(__doc__, __file__, version="0.1.1")
 
     try:
         main(arguments)
