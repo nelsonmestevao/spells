@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Say how many days are left until Christmas, and play a Christmas song.
 #
-# Needs from your system: notify-send and pw-play (a Linux desktop).
+# Needs from your system: notify-send and pw-play on a Linux desktop. macOS
+# has what it takes (osascript and afplay).
 
 set -euo pipefail
 
@@ -35,9 +36,17 @@ case $days_left in
   *) message="There are $days_left days left until Christmas!" ;;
 esac
 
-# A timer or cron job has no XDG_RUNTIME_DIR, and without it the notification
-# and the sound cannot find your desktop session.
-export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+case $(uname) in
+  Darwin)
+    osascript -e "display notification \"$message\" with title \"Christmas\""
+    afplay "$SONG"
+    ;;
+  *)
+    # A timer or cron job has no XDG_RUNTIME_DIR, and without it the
+    # notification and the sound cannot find your desktop session.
+    export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
 
-notify-send -t 16000 "$message"
-pw-play "$SONG"
+    notify-send -t 16000 "$message"
+    pw-play "$SONG"
+    ;;
+esac
