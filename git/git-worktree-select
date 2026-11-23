@@ -18,21 +18,12 @@ Needs from your system:
   git.
 """
 
-from docopt import docopt, DocoptExit
-from subprocess import CalledProcessError
-
 import os
 import re
 import sys
 
-
-RED="\033[31m"
-RESET="\033[0m"
-
-
-def error(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-    sys.exit(1)
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "lib"))
+from spellbook import error, parse_args, pick
 
 
 def main(args):
@@ -62,11 +53,7 @@ def main(args):
     if not entries:
         error("No worktrees found")
 
-    display = "\n".join(entries)
-    try:
-        selected = $(echo @(display) | gum filter --placeholder "Select worktree...").strip()
-    except CalledProcessError as cancelled:
-        sys.exit(cancelled.returncode)
+    selected = pick(entries, "Select worktree...")
 
     if not selected:
         sys.exit(1)
@@ -77,13 +64,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    try:
-        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.3')
-    except DocoptExit as wrong_usage:
-        # xonsh takes docopt's exit for a crash and prints a traceback hint
-        # above the usage. A plain SystemExit prints only the usage.
-        sys.exit(wrong_usage.code)
-
-    main(arguments)
+    main(parse_args(__doc__, __file__, version="0.1.3"))
 
 # vim: ft=python
