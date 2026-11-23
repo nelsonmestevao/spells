@@ -5,4 +5,13 @@
 
 # Print a random git joke.
 
-curl -s https://raw.githubusercontent.com/EugeneKay/git-jokes/lulz/Jokes.txt | awk 'BEGIN { srand() } int(rand() * NR) == 0 { x = $0 } END { print x }'
+JOKES=https://raw.githubusercontent.com/EugeneKay/git-jokes/lulz/Jokes.txt
+
+# With --fail, an error page from GitHub stops the spell here. Without it, a
+# line of that page came out as the joke.
+if ! jokes=$(curl --silent --fail --location "$JOKES"); then
+  echo "git-joke: could not fetch the jokes from GitHub" >&2
+  exit 1
+fi
+
+printf '%s\n' "$jokes" | awk 'BEGIN { srand() } int(rand() * NR) == 0 { x = $0 } END { print x }'
