@@ -21,23 +21,19 @@ Options:
   -v --version           Show version.
 """
 
-from docopt import docopt, DocoptExit
 from python_calamine import CalamineWorkbook
 from tabulate import tabulate
 
 import os
 import sys
 
-RED="\033[31m"
-RESET="\033[0m"
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+from spellbook import RESET, error, parse_args
+
 # Sheet titles are bold only in a terminal, so files and pipes get plain text.
 BOLD="\033[1m" if sys.stdout.isatty() else ""
 PLAIN=RESET if sys.stdout.isatty() else ""
 
-
-def error(msg):
-    print(f"{msg} {RED}✗{RESET}", file=sys.stderr)
-    sys.exit(1)
 
 EXTENSIONS = (".xlsx", ".xlsm", ".xlsb", ".xls", ".ods")
 
@@ -125,12 +121,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    try:
-        arguments = docopt(__doc__.format(program=__file__), version=f'{os.path.basename(__file__)} v0.1.1')
-    except DocoptExit as wrong_usage:
-        # xonsh takes docopt's exit for a crash and prints a traceback hint
-        # above the usage. A plain SystemExit prints only the usage.
-        sys.exit(wrong_usage.code)
+    arguments = parse_args(__doc__, __file__, version="0.1.1")
 
     try:
         main(arguments)
