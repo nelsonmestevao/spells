@@ -114,6 +114,36 @@ expect "--jobs needs a number" forall --jobs
 # Five rounds of 0.8 seconds, so this one takes a moment.
 expect "< hello >" env TERM=xterm showIt hello
 
+# --- howLongUntilChristmas ---------------------------------------------------
+# The spell asks `date` for the year and the day of the year. A pretend `date`
+# picks the day, and stand-ins take the notification and the song.
+mkdir pretend-date
+cat >pretend-date/date <<'SH'
+#!/bin/sh
+case $1 in
+  +%Y) echo "$PRETEND_YEAR" ;;
+  +%j) echo "$PRETEND_DAY" ;;
+esac
+SH
+chmod +x pretend-date/date
+
+# notification_on <year> <day of the year>: what the spell says on that day.
+notification_on() {
+  PRETEND_YEAR=$1 PRETEND_DAY=$2 PATH=$TMP/pretend-date:$PATH with_stand_ins howLongUntilChristmas
+  cat "$STAND_IN_STATE/notification"
+}
+
+expect "There are 32 days left" notification_on 2026 327
+# 1 February. bash would read the padded "032" as an octal number.
+expect "There are 327 days left" notification_on 2026 032
+expect "There is 1 day left" notification_on 2026 358
+expect "Merry Christmas!" notification_on 2026 359
+# After Christmas it counts to the next one. 2028 is a leap year.
+expect "There are 364 days left" notification_on 2026 360
+expect "There are 360 days left" notification_on 2027 365
+expect "There are 359 days left" notification_on 2028 366
+expect "songs/christmas-song.wav" cat "$STAND_IN_STATE/played"
+
 # --- spl ---------------------------------------------------------------------
 # spl works on the folder it is in, so it gets a folder of its own to change.
 # A new spell loads the shared helpers from the lib folder next to it.
