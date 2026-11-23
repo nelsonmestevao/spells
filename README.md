@@ -36,12 +36,39 @@ A spell is one file. Its first lines say everything it needs:
 - **Line 3** lists the packages the spell uses.
 - **Line 4** names the program that runs the rest of the file.
 
-So a spell needs nothing installed but nix. You can copy one file to another
-machine and run it.
+So a spell needs nothing installed but nix.
 
 A few tools cannot come from nix, such as `git` (kept from your system so it
 uses your credentials) or `gsettings`. Spells that use one say so at the end
 of their `--help`, under "Needs from your system".
+
+### Shared helpers
+
+`lib/spellbook.xsh` holds the code that xonsh spells would otherwise each
+copy. A spell then holds only its own logic.
+
+| Helper | What it does |
+|---|---|
+| `success`, `failure` | Print a line that ends in a green ✓ or a red ✗. |
+| `error` | Print a line that ends in a red ✗, and stop the spell. |
+| `log_info`, `log_warn` | Print a note, or a warning. |
+| `parse_args` | Read the command line against the docstring of the spell. |
+| `ask`, `pick` | Ask with gum. A cancelled prompt ends the spell quietly. |
+| `spin` | Run a command behind a gum spinner. |
+| `step` | The same, and then say whether it worked. |
+| `default_branch` | Find the default branch of a git remote. |
+
+`spl new` writes a spell that imports a few of them. Add or drop names as
+you need:
+
+```python
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
+from spellbook import error, log_info, log_warn, parse_args, success
+```
+
+A spell that does this needs the `lib` folder next to it. To use it on
+another machine, clone this repo there. The bash, sh and python spells are
+still one file each.
 
 ## Fast starts
 

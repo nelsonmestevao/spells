@@ -161,10 +161,30 @@ in_terminal wait:navigate Down Enter -- firewall
 expect_exit 0
 expect_on_screen "firewall is off"
 
+# --- the shared helpers that ask (lib/spellbook.xsh) -------------------------
+# A small spell in tests/fixtures calls one helper at a time.
+helper=$SPELLS/tests/fixtures/spellbook-demo
+
+in_terminal wait:navigate Down Enter -- "$helper" ask choose on off
+expect_exit 0
+expect_on_screen "answer: off"
+in_terminal wait:navigate Escape -- "$helper" ask choose on off
+expect_exit 1
+in_terminal wait:navigate C-c -- "$helper" ask choose on off
+expect_exit 130
+
+in_terminal wait:navigate Down Enter -- "$helper" pick "Pick one..." first second
+expect_exit 0
+expect_on_screen "answer: second"
+# The first Esc only leaves the search box. The second one cancels.
+in_terminal wait:navigate Escape Escape -- "$helper" pick "Pick one..." first second
+expect_exit 1
+
 # --- a list to search (gum filter) -------------------------------------------
 # spl works on the folder it is in, so it gets a folder of its own.
 mkdir own
 cp "$SPELLS/spl" "$SPELLS/cowecho" own/
+cp -R "$SPELLS/lib" own/
 git init --quiet own
 
 # The first Esc only leaves the search box. The second one cancels.
