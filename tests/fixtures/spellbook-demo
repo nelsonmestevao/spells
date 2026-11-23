@@ -1,0 +1,59 @@
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p gum python313 python313Packages.xonsh python313Packages.docopt
+#! nix-shell -i xonsh
+"""
+Call one helper of lib/spellbook.xsh. The tests use this to check each helper.
+
+Usage:
+  {program} (success | failure | error | log_warn | log_info) <message>
+  {program} ask <gum-argument>...
+  {program} pick <placeholder> <line>...
+  {program} (spin | step) <title> <command>...
+  {program} default_branch [<remote>]
+  {program} (-h | --help)
+  {program} --version
+
+Options:
+  -h --help              Show this screen.
+  -v --version           Show version.
+"""
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "..", "lib"))
+import spellbook
+
+
+def main(args):
+    message = args["<message>"]
+
+    if args["success"]:
+        spellbook.success(message)
+    elif args["failure"]:
+        spellbook.failure(message)
+        print("and carried on")
+    elif args["error"]:
+        spellbook.error(message)
+        print("and carried on")
+    elif args["log_warn"]:
+        spellbook.log_warn(message)
+    elif args["log_info"]:
+        spellbook.log_info(message)
+    elif args["ask"]:
+        print("answer:", spellbook.ask(*args["<gum-argument>"]))
+    elif args["pick"]:
+        print("answer:", spellbook.pick(args["<line>"], args["<placeholder>"]))
+    elif args["spin"]:
+        print("worked:", spellbook.spin(args["<title>"], args["<command>"]))
+    elif args["step"]:
+        print("worked:", spellbook.step(args["<title>"], args["<command>"]))
+    elif args["default_branch"]:
+        print(spellbook.default_branch(args["<remote>"] or "origin"))
+
+
+if __name__ == "__main__":
+    main(spellbook.parse_args(__doc__, __file__, version="0.1.0"))
+
+# vim: ft=python
