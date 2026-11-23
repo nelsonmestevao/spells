@@ -114,6 +114,9 @@ spl new my-spell
 This makes `my-spell` from a template, with the header above, and opens it in
 your editor. `spl edit` opens an existing spell.
 
+A spell starts with one line that says what it does: the first line of its
+docstring, or a comment right under the header.
+
 ### Versions
 
 A spell with a `--version` option carries its own number. Bump it in the pull

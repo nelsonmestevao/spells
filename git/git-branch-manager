@@ -3,6 +3,8 @@
 #! nix-shell -p gum
 #! nix-shell -i sh
 
+# Pick branches from a list, then delete, update or rebase them.
+#
 # This script is used to manage git branches such as delete, update, and rebase
 # them. It prompts the user to choose the branches and the action they want to
 # perform.

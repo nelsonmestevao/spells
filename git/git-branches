@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-
+# List the local branches, the one with the newest commit last.
+#
 # Source: https://github.com/mhanberg/.dotfiles/blob/main/bin/git-branches-sorted
 
 git for-each-ref --sort=committerdate refs/heads/ --format='%(HEAD) %(color:yellow)%(refname:short)%(color:reset) - %(color:red)%(objectname:short)%(color:reset) - %(contents:subject) - %(authorname) (%(color:green)%(committerdate:relative)%(color:reset))' --color=always

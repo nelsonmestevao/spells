@@ -3,6 +3,8 @@
 #! nix-shell -p python313 zsh
 #! nix-shell -i python
 # -*- coding: utf-8 -*-
+"""List the 40 programs you run the most, counted from ~/.zsh_history."""
+
 import os, re
 
 aliases_file_name = "/tmp/aliases.tmp"

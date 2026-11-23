@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Run a command in each folder right under this one.
 
 show_help() {
 	cat <<'EOF'

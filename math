@@ -3,4 +3,6 @@
 #! nix-shell -p bc
 #! nix-shell -i bash
 
+# Do a calculation with bc, for example: math 2+2
+
 echo "$@" | bc -l

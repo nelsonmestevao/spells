@@ -3,6 +3,8 @@
 #! nix-shell -p gum
 #! nix-shell -i sh
 
+# Write a conventional commit message by answering a few questions.
+#
 # This script is used to write a conventional commit message.
 # It prompts the user to choose the type of commit as specified in the
 # conventional commit spec. And then prompts for the summary and detailed
