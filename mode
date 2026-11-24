@@ -1,6 +1,6 @@
 #!/usr/bin/env nix-shell
 #! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
-#! nix-shell -p bash gnused gnugrep
+#! nix-shell -p bash gnused gnugrep qmk_hid
 #! nix-shell -i bash
 
 # Switch the screen set-up: chill for working alone, demo for showing your screen.
@@ -9,7 +9,7 @@ set -Eeuo pipefail
 shopt -s inherit_errexit
 
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
-VERSION=0.6.0
+VERSION=0.7.0
 
 # shellcheck source=lib/spellbook.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib/spellbook.sh"
@@ -135,7 +135,41 @@ function display_help() {
     -h, --help      Show this screen.
     -v, --version   Show version.
     -t, --theme     Show current theme.
+    -k, --keyboard  Turn the keyboard light on or off.
 EOF
+}
+
+# keyboard_light [PERCENT]
+#
+# Print the keyboard light's brightness as a percentage, after setting it to
+# PERCENT when one is given. The Framework keyboard is a QMK device, so this
+# goes through qmk_hid. qmk_hid exits with 0 even when it finds no keyboard,
+# so its output is checked instead.
+function keyboard_light() {
+    declare output
+
+    output=$(qmk_hid via --backlight ${1:+"$1"} 2>&1) || true
+    if [[ ${output} =~ ^Brightness:\ ([0-9]+)%$ ]]; then
+        echo "${BASH_REMATCH[1]}"
+    elif [[ ${output} == *"Permission denied"* ]]; then
+        die "no permission to reach the keyboard; it needs a udev rule that gives you its hidraw device"
+    else
+        die "cannot reach the keyboard light: ${output%%$'\n'*}"
+    fi
+}
+
+# Turn the keyboard light off if it is on, or to full brightness if it is off.
+function toggle_keyboard_light() {
+    declare level
+
+    level=$(keyboard_light)
+    if [ "${level}" -eq 0 ]; then
+        level=$(keyboard_light 100)
+    else
+        level=$(keyboard_light 0)
+    fi
+
+    echo "Keyboard light at ${level}%"
 }
 
 function get_notifications() {
@@ -270,6 +304,7 @@ case ${1:-error} in
     theme status
     ;;
 -k | --keyboard)
+    toggle_keyboard_light
     ;;
 status)
     display_status
