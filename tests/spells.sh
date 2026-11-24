@@ -282,7 +282,9 @@ done
 expect "2	Nelson Estevão" in_dir rank git-rank
 expect "2 Nelson Estevão" in_dir rank git-rank --by-line
 
-# Every joke has a space in it. This only checks that one arrives.
+# The jokes come from GitHub, which turns a busy network away now and then.
+# Every joke has a space in it, and so does the line the spell prints when
+# no joke arrives. A line of GitHub's error page has none.
 expect " " git-joke
 
 # --- small git spells --------------------------------------------------------
