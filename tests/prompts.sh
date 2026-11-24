@@ -7,7 +7,7 @@
 # A prompt needs a real terminal, so each case runs inside tmux. A case is a
 # list of steps, then `--`, then the command:
 #
-#   in_terminal wait:navigate Escape -- caffeine
+#   in_terminal wait:navigate Escape -- firewall
 #
 # `wait:TEXT` waits until TEXT is on the screen. Any other step is a key for
 # tmux (Enter, Escape, C-c, Down) or text to type. Afterwards $screen holds
@@ -29,9 +29,6 @@ trap 'T kill-server 2>/dev/null; rm -rf "$TMP"' EXIT
 # The spells of this checkout come first, with the stand-ins ahead of them.
 export PATH=$SPELLS/tests/stand-ins:$SPELLS:$SPELLS/git:$PATH
 export STAND_IN_STATE=$TMP
-# Spells that keep notes between runs (caffeine on macOS) keep them here.
-export XDG_STATE_HOME=$TMP/state
-export DOTFILES=$TMP/dotfiles
 export EDITOR=true
 # The throwaway repos below must not use your git settings.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
@@ -141,22 +138,17 @@ cd "$TMP" || exit 1
 
 # Build every environment first. The first run of a header can take minutes
 # to download, and that must not eat into the one-minute waits below.
-caffeine --version >/dev/null 2>&1
+firewall --version >/dev/null 2>&1
 spl --version >/dev/null 2>&1
 git-branch-manager >/dev/null 2>&1
 keygen --version >/dev/null 2>&1
 
 # --- a list to choose from (gum choose) --------------------------------------
-in_terminal wait:navigate Escape -- caffeine
-expect_exit 1
-in_terminal wait:navigate C-c -- caffeine
-expect_exit 130
-in_terminal wait:navigate Enter -- caffeine
-expect_exit 0
-expect_on_screen "caffeine is on"
-caffeine off >/dev/null 2>&1
-
 echo active >"$STAND_IN_STATE/systemctl"
+in_terminal wait:navigate Escape -- firewall
+expect_exit 1
+in_terminal wait:navigate C-c -- firewall
+expect_exit 130
 in_terminal wait:navigate Down Enter -- firewall
 expect_exit 0
 expect_on_screen "firewall is off"
@@ -264,9 +256,6 @@ git worktree add --quiet ../second -b second
 in_terminal wait:navigate Enter -- git-worktree-select
 expect_exit 0
 expect_on_screen "$TMP/repo"
-
-in_terminal wait:navigate C-c -- herd
-expect_exit 130
 
 # harrypotter types a dialog for over a minute. Ctrl-C must end all of it,
 # not only the line on the screen.

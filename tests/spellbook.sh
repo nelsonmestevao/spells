@@ -14,8 +14,8 @@ source "$(dirname "$0")/lib/checks.sh"
 # --- every xonsh spell shows its help ---------------------------------------
 # A wrong option must print the usage first, with no xonsh traceback hint
 # above it.
-for spell in caffeine cdoc chtml cpdf cxls excoveralls-report firewall fulldoctest herd \
-  hexdiff jpg2jxl notifications pscpu psmem spl theme git-sync-branches git-sync-worktrees \
+for spell in cdoc chtml cpdf cxls excoveralls-report firewall fulldoctest \
+  hexdiff jpg2jxl pscpu psmem spl git-sync-branches git-sync-worktrees \
   git-worktree-select; do
   expect "Usage:" "$spell" --help
   expect "Usage:" first_line "$spell" --nope
