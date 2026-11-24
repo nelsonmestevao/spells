@@ -40,5 +40,5 @@ fi
 # libxshmfence is a library the app needs and appimage-run does not bring.
 # The single quotes are on purpose: the shell that nix-shell starts reads this.
 # shellcheck disable=SC2016
-nix-shell -p xorg.libxshmfence --run \
-  'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(nix eval --raw nixpkgs#xorg.libxshmfence)/lib appimage-run "$EDEX_APPIMAGE"'
+nix-shell -p libxshmfence --run \
+  'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(nix eval --raw nixpkgs#libxshmfence)/lib appimage-run "$EDEX_APPIMAGE"'
