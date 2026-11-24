@@ -287,6 +287,14 @@ own_copies() {
 }
 expect "no copies" own_copies
 
+# The same goes for a bash spell that loads lib/spellbook.sh.
+shared_in_bash=$(sed -n 's/^\([a-z_]*\)() {$/\1/p' "$SPELLS/lib/spellbook.sh" | paste -sd '|' -)
+own_bash_copies() {
+  grep -IlE '^source .*lib/spellbook\.sh' "$SPELLS"/* "$SPELLS"/git/* 2>/dev/null |
+    while read -r spell; do grep -HnE "^(function )?($shared_in_bash)\\(\\)" "$spell"; done | grep . || echo "no copies"
+}
+expect "no copies" own_bash_copies
+
 # --- git-rank and git-joke ---------------------------------------------------
 # git-rank only prints when the name written in it is among the authors.
 git init --quiet --initial-branch main rank

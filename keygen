@@ -13,10 +13,8 @@ VERSION=1.0.1
 GREEN="\033[1;32m"
 RESET="\033[0m"
 
-# Print a help section title in bold capitals.
-function help_section() {
-  printf '\033[1m%s\033[0m' "$(echo "$*" | tr '[:lower:]' '[:upper:]')"
-}
+# shellcheck source=lib/spellbook.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/spellbook.sh"
 
 function display_help() {
   cat <<EOF
@@ -57,19 +55,6 @@ function default_comment() {
   [[ -n ${os-} ]] || os=$(uname -s | tr '[:upper:]' '[:lower:]')
   host=$(uname -n)
   echo "$os@${host%%.*}"
-}
-
-# Copy what comes in to the clipboard, with the tool this system has.
-function to_clipboard() {
-  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-copy >/dev/null; then
-    wl-copy
-  elif command -v pbcopy >/dev/null; then
-    pbcopy
-  elif command -v xsel >/dev/null; then
-    xsel --input --clipboard
-  else
-    return 1
-  fi
 }
 
 # Show a path with ~ in place of the home folder.

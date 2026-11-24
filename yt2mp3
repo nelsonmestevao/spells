@@ -10,10 +10,8 @@ set -Eeuo pipefail
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
 VERSION=0.1.1
 
-# Print a help section title in bold capitals.
-function help_section() {
-  printf '\033[1m%s\033[0m' "${*^^}"
-}
+# shellcheck source=lib/spellbook.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/spellbook.sh"
 
 function display_help() {
   cat <<EOF

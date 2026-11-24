@@ -6,11 +6,8 @@ set -Eeuo pipefail
 PROGRAM=$(basename "${BASH_SOURCE[0]:-$0}")
 VERSION=0.5.0
 
-# Print a help section title in bold capitals. (tr, not ${*^^}: this runs on
-# the bash 3.2 that macOS ships, too.)
-function help_section() {
-  printf '\033[1m%s\033[0m' "$(echo "$*" | tr '[:lower:]' '[:upper:]')"
-}
+# shellcheck source=lib/spellbook.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/spellbook.sh"
 
 function display_help() {
   cat <<EOF

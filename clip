@@ -11,6 +11,9 @@
 # Needs from your system: a clipboard tool (wl-clipboard, pbcopy and pbpaste,
 # or xsel).
 
+# shellcheck source=lib/spellbook.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/spellbook.sh"
+
 if [[ $# -gt 0 ]]; then
   echo "Usage: $(basename "$0") < file    (copy)" >&2
   echo "       $(basename "$0")           (print the clipboard)" >&2
@@ -20,18 +23,6 @@ fi
 no_tool() {
   echo "clip: found no clipboard tool (wl-clipboard, pbcopy or xsel)" >&2
   exit 1
-}
-
-to_clipboard() {
-  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-copy >/dev/null; then
-    wl-copy
-  elif command -v pbcopy >/dev/null; then
-    pbcopy
-  elif command -v xsel >/dev/null; then
-    xsel --input --clipboard
-  else
-    no_tool
-  fi
 }
 
 from_clipboard() {
@@ -48,7 +39,7 @@ from_clipboard() {
 
 # A terminal or /dev/null on stdin means there is nothing to copy.
 if [[ -p /dev/stdin || -f /dev/stdin ]]; then
-  to_clipboard
+  to_clipboard || no_tool
 else
   from_clipboard
 fi

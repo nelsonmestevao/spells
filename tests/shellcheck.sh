@@ -11,13 +11,16 @@ cd "$(dirname "$0")/.." || exit 1
 
 # shell_of <file>: bash or sh, the shell the file is written for. Fails for
 # any other file. A spell with a nix-shell header names its shell on the
-# `-i` line, where shellcheck does not look.
+# `-i` line, where shellcheck does not look. A file that is only ever sourced
+# (lib/spellbook.sh) has no `#!` line, and names its shell in a shellcheck
+# comment.
 shell_of() {
   local first shell
   first=$(head -c 200 "$1" 2>/dev/null | tr -d '\0' | head -n 1)
   case $first in
     '#!/usr/bin/env nix-shell') shell=$(sed -n 's/^#! nix-shell -i \([a-z0-9]*\).*/\1/p' "$1" | head -n 1) ;;
     '#!'*) shell=${first##*[/ ]} ;;
+    '# shellcheck shell='*) shell=${first#*=} ;;
     *) return 1 ;;
   esac
   [[ $shell == bash || $shell == sh ]] && echo "$shell"
@@ -30,7 +33,8 @@ failed=0
 while IFS= read -r file; do
   shell=$(shell_of "$file") || continue
   checks=$((checks + 1))
-  if shellcheck --shell="$shell" "$file"; then
+  # --external-sources: also read the file that a spell sources.
+  if shellcheck --external-sources --shell="$shell" "$file"; then
     echo "ok    $file"
   else
     echo "FAIL  $file"
