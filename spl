@@ -8,6 +8,7 @@ Manage spells.
 Usage:
   {program} new [<name>] [--description=<desc>]
   {program} edit [<name>]
+  {program} list
   {program} bump [<revision>]
   {program} (-h | --help)
   {program} --version
@@ -15,6 +16,7 @@ Usage:
 Commands:
   new       Create a new spell from a template.
   edit      Open an existing spell in the editor.
+  list      Show every spell with the line that says what it does.
   bump      Move every spell to the newest nixpkgs-unstable commit,
             or to <revision> (a full commit hash).
 
@@ -124,6 +126,51 @@ def edit_spell(name):
 
     $EDITOR @(path)
 
+def spells():
+    """(name as you type it, path) of each spell here and in git/."""
+    found = []
+    for folder, is_git in ((SPELLS, False), (os.path.join(SPELLS, "git"), True)):
+        if not os.path.isdir(folder):
+            continue
+        for name in sorted(os.listdir(folder)):
+            path = os.path.join(folder, name)
+            if name.startswith(".") or not os.path.isfile(path) or not os.access(path, os.X_OK):
+                continue
+            # git-browse is run as "git browse".
+            found.append((name.replace("git-", "git ", 1) if is_git else name, path))
+    return found
+
+def describe(path):
+    """The line that says what a spell does.
+
+    That is the first comment under its header, or the first line of its
+    docstring. "" when the spell has neither, None when the file is not text.
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            start = f.read(4000)
+    except (UnicodeDecodeError, OSError):
+        return None
+
+    for line in start.splitlines()[1:]:
+        line = line.strip()
+        if line in ("", "#") or line.startswith(("#! nix-shell", "# -*-")):
+            continue
+        if line.startswith('"""'):
+            docstring = start.split('"""')[1]
+            return next((text.strip() for text in docstring.splitlines() if text.strip()), "")
+        if line.startswith("# "):
+            return line[2:].strip()
+        break
+    return ""
+
+def list_spells():
+    described = [(name, describe(path)) for name, path in spells()]
+    described = [(name, text) for name, text in described if text is not None]
+    width = max(len(name) for name, _ in described)
+    for name, text in described:
+        print(f"{name:<{width}}  {text}".rstrip())
+
 def newest_revision():
     """The commit the nixpkgs-unstable channel points at right now."""
     url = f"https://channels.nixos.org/{NIXPKGS_CHANNEL}/git-revision"
@@ -168,10 +215,12 @@ def main(args):
         new_spell(args["<name>"], args["--description"])
     elif args["edit"]:
         edit_spell(args["<name>"])
+    elif args["list"]:
+        list_spells()
     elif args["bump"]:
         bump(args["<revision>"])
 
 if __name__ == "__main__":
-    main(parse_args(__doc__, __file__, version="0.5.1"))
+    main(parse_args(__doc__, __file__, version="0.6.0"))
 
 # vim: ft=python
