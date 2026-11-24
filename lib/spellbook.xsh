@@ -57,7 +57,9 @@ def parse_args(doc, file, version, argv=None):
     such as "0.1.0". Pass argv when the spell reads only a part of sys.argv.
     """
     try:
-        return docopt(doc.format(program=file), argv=argv, version=f"{os.path.basename(file)} v{version}")
+        # Only the name, as you type it, not the path to the file.
+        program = os.path.basename(file)
+        return docopt(doc.format(program=program), argv=argv, version=f"{program} v{version}")
     except DocoptExit as wrong_usage:
         # xonsh takes docopt's exit for a crash and prints a traceback hint
         # above the usage. A plain SystemExit prints only the usage.
