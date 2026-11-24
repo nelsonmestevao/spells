@@ -86,6 +86,12 @@ expect "scan.bmp" ls home/Downloads/Images
 expect "notes.pdf" ls home/Downloads/Documents
 expect "unknown.xyz" ls home/Downloads/Misc
 
+# --- gensecret ---------------------------------------------------------------
+expect "64 characters" bash -c 'echo "$(gensecret | tr -d "\n" | wc -c | tr -d " ") characters"'
+expect "16 characters" bash -c 'echo "$(gensecret 8 | tr -d "\n" | wc -c | tr -d " ") characters"'
+expect "gensecret v" gensecret --version
+expect "USAGE" gensecret nope
+
 # --- bash_color and keygen ---------------------------------------------------
 expect "USAGE" bash_color --help
 expect "bash_color v" bash_color --version
