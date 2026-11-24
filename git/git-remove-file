@@ -2,4 +2,4 @@
 # Remove a file from every commit in the history of this branch.
 
 git filter-branch --index-filter \
-  "git rm -rf --cached --ignore-unmatch $@" HEAD
+  "git rm -rf --cached --ignore-unmatch $*" HEAD

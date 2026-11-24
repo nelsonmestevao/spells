@@ -7,6 +7,10 @@
 #
 # Written for bash 3.2, the one macOS ships.
 
+# Many checks hand a line of shell to `bash -c` in single quotes, so that it
+# runs later, inside the check. shellcheck takes that for a mistake.
+# shellcheck disable=SC2016
+
 cd "$(dirname "$0")/.." || exit 1
 SPELLS=$PWD
 TMP=$(mktemp -d)

@@ -143,3 +143,8 @@ tests/run
 This runs every script in `tests/`. GitHub Actions runs the same command for
 every pull request: through `shims/nix-shell` on Linux and macOS, and with
 plain `nix-shell` on Linux.
+
+One of the scripts, `tests/shellcheck.sh`, runs
+[shellcheck](https://www.shellcheck.net) on every bash and sh script in the
+repo. When it flags a line that is right as it is, say why in a comment and
+add `# shellcheck disable=SC...` above the line.
