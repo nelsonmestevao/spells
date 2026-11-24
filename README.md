@@ -118,7 +118,8 @@ This makes `my-spell` from a template, with the header above, and opens it in
 your editor. `spl edit` opens an existing spell.
 
 A spell starts with one line that says what it does: the first line of its
-docstring, or a comment right under the header.
+docstring, or a comment right under the header. `spl list` shows every spell
+with that line.
 
 ### Versions
 

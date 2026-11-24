@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Start eDEX-UI, the sci-fi terminal, from the AppImage next to this file.
 
 cd "$(dirname "$0")" || exit 1
 
