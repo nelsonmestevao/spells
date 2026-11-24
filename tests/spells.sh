@@ -688,6 +688,52 @@ expect "https://github.com/you/repo" grep -x "https://github.com/you/repo" "$STA
 in_dir browse git remote set-url origin https://gitlab.com/group/repo.git
 expect "https://gitlab.com/group/repo/-/compare/main...fix" with_stand_ins in_dir browse git-browse
 
+# --- edex --------------------------------------------------------------------
+# edex downloads its app once, checks the file and starts it. Pretend tools
+# stand in for the three steps, so nothing is downloaded and nothing starts:
+#
+#   curl        writes a small file where the app would go, and notes each run
+#   sha256sum   prints the checksum edex expects, or another one when
+#               WRONG_FILE is set
+#   nix-shell   prints the file edex asked it to start
+mkdir pretend-edex
+cat >pretend-edex/curl <<'SH'
+#!/usr/bin/env bash
+echo download >>"$STAND_IN_STATE/edex-downloads"
+while [[ $# -gt 0 ]]; do
+  [[ $1 == --output ]] && echo "the app" >"$2"
+  shift
+done
+SH
+cat >pretend-edex/sha256sum <<'SH'
+#!/usr/bin/env bash
+echo "${WRONG_FILE:+not-}$EXPECTED_SUM  $1"
+SH
+cat >pretend-edex/nix-shell <<'SH'
+#!/usr/bin/env bash
+echo "started $EDEX_APPIMAGE"
+SH
+chmod +x pretend-edex/curl pretend-edex/sha256sum pretend-edex/nix-shell
+
+run_edex() {
+  EXPECTED_SUM=$(sed -n 's/^SHA256=//p' "$SPELLS/edex") XDG_CACHE_HOME=$TMP/edex-cache PATH=$TMP/pretend-edex:$PATH edex
+}
+run_edex_with_a_wrong_file() {
+  WRONG_FILE=yes run_edex
+}
+kept=$TMP/edex-cache/edex/eDEX-UI-2.2.8.AppImage
+
+# A wrong file is thrown away, and nothing is started.
+expect "wrong checksum" run_edex_with_a_wrong_file
+expect "nothing kept" bash -c 'ls "$1" | grep . || echo "nothing kept"' _ "$TMP/edex-cache/edex"
+
+# The first good run downloads the app and starts it. The second run starts
+# the file it kept, with no download: two downloads in all, one of them wrong.
+expect "started $kept" run_edex
+expect "started $kept" run_edex
+expect "2 downloads" bash -c 'echo "$(grep -c . "$STAND_IN_STATE/edex-downloads") downloads"'
+expect "the app" cat "$kept"
+
 # --- serve -------------------------------------------------------------------
 serve 8765 --bind 127.0.0.1 --directory coverage >/dev/null 2>&1 &
 server=$!
