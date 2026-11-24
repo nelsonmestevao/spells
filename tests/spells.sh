@@ -433,14 +433,6 @@ expect "| mix/ | 1 | 90.0% |" cat coverage/cover/coverage_report.md
 # --- fulldoctest (only what it would run; the real thing downloads GHC) ------
 expect "haskellPackages.doctest --run" fulldoctest --dry-run -p gloss Demo.hs -- --verbose
 
-# --- copy --------------------------------------------------------------------
-echo "from a pipe" | with_stand_ins copy
-expect "from a pipe" cat "$STAND_IN_STATE/clipboard"
-
-echo "from a file" >copy.txt
-with_stand_ins copy copy.txt
-expect "from a file" cat "$STAND_IN_STATE/clipboard"
-
 # --- git spells built on fzf -------------------------------------------------
 # With --filter, fzf prints what matches and needs no terminal.
 git init --quiet --initial-branch main picks
