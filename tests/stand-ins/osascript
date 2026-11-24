@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
-# Stand-in for osascript in tests. Understands the one script the theme spell
-# sends: "... set dark mode to true" or "... to false".
+# Stand-in for osascript in tests. Understands the two scripts the spells
+# send:
+#
+#   - theme: "... set dark mode to true" or "... to false"
+#   - howLongUntilChristmas: display notification "<text>" with title "..."
+#     The text goes to the file the notify-send stand-in writes, so a test
+#     reads the same file on Linux and on macOS.
 
-case "$*" in
+script="$*"
+
+case $script in
   *"set dark mode to true"*) echo true >"${STAND_IN_STATE:?}/macos-dark-mode" ;;
   *"set dark mode to false"*) echo false >"${STAND_IN_STATE:?}/macos-dark-mode" ;;
+  *'display notification "'*)
+    text=${script#*display notification \"}
+    echo "${text%%\"*}" >"${STAND_IN_STATE:?}/notification"
+    ;;
   *)
     echo "stand-in osascript: unknown script: $*" >&2
     exit 1
