@@ -5,7 +5,7 @@
 # downloads it from the project's releases on GitHub, checks that it is the
 # right file, and keeps it in ~/.cache/edex. Later runs start at once.
 #
-# Needs from your system: curl, sha256sum, nix-shell and appimage-run.
+# Needs from your system: curl, sha256sum and nix-shell.
 
 set -euo pipefail
 
@@ -37,8 +37,12 @@ if [[ ! -f $EDEX_APPIMAGE ]]; then
   mv "$download" "$EDEX_APPIMAGE"
 fi
 
-# libxshmfence is a library the app needs and appimage-run does not bring.
-# The single quotes are on purpose: the shell that nix-shell starts reads this.
+# The app runs inside appimage-run. libxshmfence is a library the app needs
+# and appimage-run does not bring, so it is added to it here. Both come from
+# the nixpkgs commit that the other spells use, and `spl bump` moves it too.
+#
+# The single quotes are on purpose: the shell that nix-shell starts reads them.
 # shellcheck disable=SC2016
-nix-shell -p xorg.libxshmfence --run \
-  'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(nix eval --raw nixpkgs#xorg.libxshmfence)/lib appimage-run "$EDEX_APPIMAGE"'
+nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz \
+  -p 'appimage-run.override { extraPkgs = pkgs: [ pkgs.libxshmfence ]; }' \
+  --run 'appimage-run "$EDEX_APPIMAGE"'
