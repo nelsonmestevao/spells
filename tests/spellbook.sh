@@ -21,6 +21,8 @@ for spell in cdoc chtml cpdf cxls excoveralls-report firewall fulldoctest \
   expect "Usage:" first_line "$spell" --nope
 done
 expect "hexdiff v" hexdiff --version
+# The usage names the spell as you type it, not the path to its file.
+expect $'Usage:\n  hexdiff [<base>]' hexdiff --help
 
 # --- spl ---------------------------------------------------------------------
 # spl works on the folder it is in, so it gets a folder of its own to change.
