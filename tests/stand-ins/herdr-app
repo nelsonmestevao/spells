@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
-# Stand-in for herdr-app in tests. Says that no space is open.
+# Stand-in for herdr-app in tests.
+#
+#   ls   prints the spaces in $STAND_IN_STATE/herdr-spaces.json. With no such
+#        file, it says that no space is open.
+#   do   adds the command to $STAND_IN_STATE/herdr-commands, so a test can
+#        check what the spell asked the window to do.
 
 case $1 in
-  ls) echo '{"spaces": []}' ;;
+  ls) cat "${STAND_IN_STATE:?}/herdr-spaces.json" 2>/dev/null || echo '{"spaces": []}' ;;
+  do)
+    shift
+    echo "$*" >>"${STAND_IN_STATE:?}/herdr-commands"
+    echo '{}'
+    ;;
   *) echo '{}' ;;
 esac
