@@ -66,16 +66,34 @@ def bucket(results):
     }
 
 
+def app_folder(results):
+    """The folder under lib/ that holds the most files: the app's own name."""
+    counts = defaultdict(int)
+    for f, _ in results:
+        parts = f.split("/")
+        if parts[0] == "lib" and len(parts) > 2:
+            counts[parts[1].removesuffix("_web")] += 1
+    return max(counts, key=counts.get) if counts else None
+
+
 def group_by_module(results):
-    """Group files by their top-level module directory."""
+    """Group files by the folder right under the app's own folder.
+
+    For an app called shop:
+      lib/shop/orders/cart.ex    -> orders/
+      lib/shop/repo.ex           -> (root)
+      lib/shop_web/live/cart.ex  -> web/
+      lib/mix/tasks/seed.ex      -> mix/
+    """
+    app = app_folder(results)
     groups = defaultdict(list)
 
     for f, p in results:
-        # Normalize web paths
-        if f.startswith("lib/logflare_web/"):
-            stripped = "web/" + f.removeprefix("lib/logflare_web/")
-        else:
-            stripped = f.removeprefix("lib/logflare/")
+        stripped = f.removeprefix("lib/")
+        if app and stripped.startswith(f"{app}_web/"):
+            stripped = "web/" + stripped.removeprefix(f"{app}_web/")
+        elif app:
+            stripped = stripped.removeprefix(f"{app}/")
 
         parts = stripped.split("/")
         group = parts[0] + "/" if len(parts) > 1 else "(root)"
@@ -215,6 +233,6 @@ def main(args):
 
 
 if __name__ == "__main__":
-    main(parse_args(__doc__, __file__, version="0.1.1"))
+    main(parse_args(__doc__, __file__, version="0.1.2"))
 
 # vim: ft=python
