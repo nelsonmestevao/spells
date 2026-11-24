@@ -12,8 +12,8 @@ cd "$(dirname "$0")/.." || exit 1
 # shell_of <file>: bash or sh, the shell the file is written for. Fails for
 # any other file. A spell with a nix-shell header names its shell on the
 # `-i` line, where shellcheck does not look. A file that is only ever sourced
-# (lib/spellbook.sh) has no `#!` line, and names its shell in a shellcheck
-# comment.
+# (lib/spellbook.sh, tests/lib/checks.sh) has no `#!` line, and names its
+# shell in a shellcheck comment.
 shell_of() {
   local first shell
   first=$(head -c 200 "$1" 2>/dev/null | tr -d '\0' | head -n 1)
@@ -33,7 +33,7 @@ failed=0
 while IFS= read -r file; do
   shell=$(shell_of "$file") || continue
   checks=$((checks + 1))
-  # --external-sources: also read the file that a spell sources.
+  # --external-sources: also read the file that a spell or a test sources.
   if shellcheck --external-sources --shell="$shell" "$file"; then
     echo "ok    $file"
   else
