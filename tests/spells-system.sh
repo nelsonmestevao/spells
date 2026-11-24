@@ -153,12 +153,15 @@ expect "Nothing to close" with_stand_ins herd --prune
 
 # --- edex --------------------------------------------------------------------
 # edex downloads its app once, checks the file and starts it. Pretend tools
-# stand in for the three steps, so nothing is downloaded and nothing starts:
+# stand in for the three steps, so nothing is downloaded and nothing starts.
+# nix-shell runs the spell with plain bash, so the stand-ins come before what
+# the header would add:
 #
 #   curl        writes a small file where the app would go, and notes each run
 #   sha256sum   prints the checksum edex expects, or another one when
 #               WRONG_FILE is set
-#   nix-shell   prints the file edex asked it to start
+#   nix-shell     runs the spell with bash, skipping the header
+#   appimage-run  prints the file edex asked it to start
 mkdir pretend-edex
 cat >pretend-edex/curl <<'SH'
 #!/usr/bin/env bash
@@ -174,9 +177,13 @@ echo "${WRONG_FILE:+not-}$EXPECTED_SUM  $1"
 SH
 cat >pretend-edex/nix-shell <<'SH'
 #!/usr/bin/env bash
-echo "started $EDEX_APPIMAGE"
+exec bash "$@"
 SH
-chmod +x pretend-edex/curl pretend-edex/sha256sum pretend-edex/nix-shell
+cat >pretend-edex/appimage-run <<'SH'
+#!/usr/bin/env bash
+echo "started $1"
+SH
+chmod +x pretend-edex/curl pretend-edex/sha256sum pretend-edex/nix-shell pretend-edex/appimage-run
 
 run_edex() {
   EXPECTED_SUM=$(sed -n 's/^SHA256=//p' "$SPELLS/edex") XDG_CACHE_HOME=$TMP/edex-cache PATH=$TMP/pretend-edex:$PATH edex

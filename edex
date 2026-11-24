@@ -1,11 +1,17 @@
-#!/usr/bin/env bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p curl coreutils "appimage-run.override { extraPkgs = pkgs: [ pkgs.libxshmfence ]; }"
+#! nix-shell -i bash
+
 # Start eDEX-UI, the sci-fi terminal. Linux on an x86-64 computer only.
 #
 # The app is one 96 MB file, too big to keep in this repo. The first run
 # downloads it from the project's releases on GitHub, checks that it is the
 # right file, and keeps it in ~/.cache/edex. Later runs start at once.
 #
-# Needs from your system: curl, sha256sum, nix-shell and appimage-run.
+# The header brings curl, sha256sum (from coreutils) and appimage-run.
+# appimage-run gets libxshmfence added, a library the app needs that
+# appimage-run does not bring. Only nix-shell has to be on your system.
 
 set -euo pipefail
 
@@ -13,8 +19,7 @@ VERSION=2.2.8
 URL=https://github.com/GitSquared/edex-ui/releases/download/v$VERSION/eDEX-UI-Linux-x86_64.AppImage
 SHA256=c8f28cd721ca032ca0c1960b756ca3e64dc441a643c32eafbb79c673b402d681
 
-# nix-shell passes this on to the command it runs.
-export EDEX_APPIMAGE=${XDG_CACHE_HOME:-$HOME/.cache}/edex/eDEX-UI-$VERSION.AppImage
+EDEX_APPIMAGE=${XDG_CACHE_HOME:-$HOME/.cache}/edex/eDEX-UI-$VERSION.AppImage
 
 if [[ ! -f $EDEX_APPIMAGE ]]; then
   mkdir -p "$(dirname "$EDEX_APPIMAGE")"
@@ -37,8 +42,8 @@ if [[ ! -f $EDEX_APPIMAGE ]]; then
   mv "$download" "$EDEX_APPIMAGE"
 fi
 
-# libxshmfence is a library the app needs and appimage-run does not bring.
-# The single quotes are on purpose: the shell that nix-shell starts reads this.
-# shellcheck disable=SC2016
-nix-shell -p xorg.libxshmfence --run \
-  'LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(nix eval --raw nixpkgs#xorg.libxshmfence)/lib appimage-run "$EDEX_APPIMAGE"'
+# The app has its own copy of fontconfig, built into it in 2021. It cannot
+# read the font settings of a newer fontconfig, and prints a few dozen lines
+# about each run. They are harmless (the app brings its own fonts), so they
+# are left out of what the app prints. Everything else still shows.
+exec appimage-run "$EDEX_APPIMAGE" 2> >(grep -v '^Fontconfig ' >&2)
