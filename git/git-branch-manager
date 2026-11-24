@@ -19,6 +19,8 @@ git_color_text () {
 }
 
 get_branches () {
+  # gum takes one word per branch, so the list of branches stays unquoted.
+  # shellcheck disable=SC2046
   if [ ${1+x} ]; then
     gum choose --selected.foreground="$GIT_COLOR" --limit="$1" $(git branch --format="%(refname:short)")
   else
@@ -26,9 +28,7 @@ get_branches () {
   fi
 }
 
-git rev-parse --git-dir > /dev/null 2>&1
-
-if [ $? -ne 0 ];
+if ! git rev-parse --git-dir > /dev/null 2>&1;
 then
   echo "$(git_color_text "!!") Must be run in a $(git_color_text "git") repo" 
   exit 1
@@ -49,7 +49,7 @@ echo "Choose a $(git_color_text "command"):"
 command=$(gum choose --cursor.foreground="$GIT_COLOR" rebase delete update)
 echo ""
 
-echo $branches | tr " " "\n" | while read -r branch
+echo "$branches" | tr " " "\n" | while read -r branch
 do
   case $command in
     rebase)
