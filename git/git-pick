@@ -7,19 +7,8 @@
 #
 # Needs from your system: git, and a clipboard tool (wl-copy, pbcopy or xsel).
 
-# Copy what comes in to the clipboard, with the tool this system has.
-to_clipboard() {
-  if [[ -n ${WAYLAND_DISPLAY-} ]] && command -v wl-copy >/dev/null; then
-    wl-copy
-  elif command -v pbcopy >/dev/null; then
-    pbcopy
-  elif command -v xsel >/dev/null; then
-    xsel --input --clipboard
-  else
-    echo "git-pick: found no clipboard tool (wl-copy, pbcopy or xsel)" >&2
-    return 1
-  fi
-}
+# shellcheck source=lib/spellbook.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/spellbook.sh"
 
 hashes=$(git log --color=always --oneline |
   fzf --multi --ansi --preview 'git show --color=always {+1}' |
@@ -28,4 +17,7 @@ hashes=$(git log --color=always --oneline |
 # Nothing picked: leave the clipboard as it is.
 [[ -n $hashes ]] || exit 1
 
-echo "$hashes" | to_clipboard
+if ! echo "$hashes" | to_clipboard; then
+  echo "git-pick: found no clipboard tool (wl-copy, pbcopy or xsel)" >&2
+  exit 1
+fi

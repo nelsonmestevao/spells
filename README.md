@@ -69,9 +69,23 @@ from spellbook import error, log_info, log_warn, parse_args, success
 `lib/processes.xsh` holds what `pscpu` and `psmem` share: the list of running
 processes, and the table of the biggest ones.
 
-A spell that does this needs the `lib` folder next to it. To use it on
-another machine, clone this repo there. The bash, sh and python spells are
-still one file each.
+`lib/spellbook.sh` does the same job for the bash spells:
+
+| Helper | What it does |
+|---|---|
+| `help_section` | Print the title of a help section in bold capitals. |
+| `to_clipboard` | Copy what comes in to the clipboard, with the tool this system has. |
+
+A bash spell loads it with one line (a spell in `git/` goes up one folder
+first):
+
+```bash
+source "$(dirname "${BASH_SOURCE[0]}")/lib/spellbook.sh"
+```
+
+A spell that loads one of these files needs the `lib` folder next to it. To
+use it on another machine, clone this repo there. Every other spell is still
+one file.
 
 ## Fast starts
 
