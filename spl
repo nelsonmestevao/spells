@@ -10,6 +10,7 @@ Usage:
   {program} edit [<name>]
   {program} list
   {program} bump [<revision>]
+  {program} warm
   {program} (-h | --help)
   {program} --version
 
@@ -19,6 +20,8 @@ Commands:
   list      Show every spell with the line that says what it does.
   bump      Move every spell to the newest nixpkgs-unstable commit,
             or to <revision> (a full commit hash).
+  warm      Build the environment of every spell now, so that none is slow
+            on its first run. Worth doing after a bump.
 
 Options:
   -h --help                    Show this screen.
@@ -32,10 +35,11 @@ Needs from your system:
 import os
 import re
 import sys
+import tempfile
 import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "lib"))
-from spellbook import ask, error, log_info, parse_args, success
+from spellbook import ask, error, failure, log_info, parse_args, success
 
 
 # The folder this file is in. Every command works on the spells next to it.
@@ -207,8 +211,69 @@ def bump(revision):
         return
 
     success(f"{len(changed)} files now use nixpkgs {revision}")
-    log_info("The first run of each spell downloads its new packages.")
+    log_info("The first run of each spell downloads its new packages. Run spl warm to get them all now.")
     log_info("Run tests/run to check that the spells still work.")
+
+def headers():
+    """Each nix-shell header in use, with the names of the spells that have it.
+
+    A header is every `#! nix-shell` line of a file. That is how nix-shell
+    reads a file, and so does the cache in shims/nix-shell.
+    """
+    spells_with = {}
+    for name in files_with_a_pin():
+        try:
+            with open(os.path.join(SPELLS, name), encoding="utf-8") as f:
+                lines = f.read().splitlines()
+        except (UnicodeDecodeError, OSError):
+            continue
+        if not lines or lines[0] != "#!/usr/bin/env nix-shell":
+            continue
+        header = "\n".join(line for line in lines if re.match("#! *nix-shell ", line))
+        spells_with.setdefault(header, []).append(name)
+    return spells_with
+
+def some_of(names):
+    """The names, or the first two and a count when there are many."""
+    if len(names) <= 3:
+        return ", ".join(names)
+    return f"{names[0]}, {names[1]} and {len(names) - 2} more"
+
+def why_it_failed(log):
+    """The line of nix's output that names the problem."""
+    with open(log, errors="replace") as f:
+        errors = [line.strip() for line in f if line.strip().startswith("error:")]
+    return errors[-1] if errors else "nix-shell gave no reason"
+
+def warm():
+    """Build each environment by running an empty spell that has its header."""
+    spells_with = headers()
+    not_built = []
+    spells_left_out = []
+    # nix can print a page of text. It goes to a file, and one line of it is shown.
+    into_the_log = '"$0" >"$1" 2>&1'
+
+    with tempfile.TemporaryDirectory() as folder:
+        log = os.path.join(folder, "log")
+        for number, (header, names) in enumerate(spells_with.items()):
+            empty_spell = os.path.join(folder, f"spell-{number}")
+            with open(empty_spell, "w") as f:
+                f.write(f"#!/usr/bin/env nix-shell\n{header}\n")
+            os.chmod(empty_spell, 0o755)
+
+            title = f"Environment of {some_of(names)}"
+            if ![gum spin --align=right --title @(f"{title}...") -- sh -c @(into_the_log) @(empty_spell) @(log)]:
+                success(title)
+            else:
+                failure(title)
+                print(f"  {why_it_failed(log)}", file=sys.stderr)
+                not_built.append(header)
+                spells_left_out += names
+
+    if not_built:
+        ready = len(spells_with) - len(not_built)
+        error(f"{ready} environments are ready. Not built: {', '.join(spells_left_out)}")
+    success(f"All {len(spells_with)} environments are ready")
 
 def main(args):
     if args["new"]:
@@ -219,8 +284,10 @@ def main(args):
         list_spells()
     elif args["bump"]:
         bump(args["<revision>"])
+    elif args["warm"]:
+        warm()
 
 if __name__ == "__main__":
-    main(parse_args(__doc__, __file__, version="0.6.0"))
+    main(parse_args(__doc__, __file__, version="0.7.0"))
 
 # vim: ft=python
