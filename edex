@@ -42,4 +42,8 @@ if [[ ! -f $EDEX_APPIMAGE ]]; then
   mv "$download" "$EDEX_APPIMAGE"
 fi
 
-exec appimage-run "$EDEX_APPIMAGE"
+# The app has its own copy of fontconfig, built into it in 2021. It cannot
+# read the font settings of a newer fontconfig, and prints a few dozen lines
+# about each run. They are harmless (the app brings its own fonts), so they
+# are left out of what the app prints. Everything else still shows.
+exec appimage-run "$EDEX_APPIMAGE" 2> >(grep -v '^Fontconfig ' >&2)
