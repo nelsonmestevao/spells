@@ -39,7 +39,7 @@ A spell is one file. Its first lines say everything it needs:
 So a spell needs nothing installed but nix.
 
 A few tools cannot come from nix, such as `git` (kept from your system so it
-uses your credentials) or `gsettings`. Spells that use one say so at the end
+uses your credentials) or `systemctl`. Spells that use one say so at the end
 of their `--help`, under "Needs from your system".
 
 ### Shared helpers

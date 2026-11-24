@@ -20,9 +20,6 @@ trap 'rm -rf "$TMP"' EXIT
 # The spells of this checkout come first, ahead of any installed copy.
 export PATH=$SPELLS:$SPELLS/git:$PATH
 export STAND_IN_STATE=$TMP
-# Spells that keep notes between runs (caffeine on macOS) keep them here.
-export XDG_STATE_HOME=$TMP/state
-export DOTFILES=$TMP/dotfiles
 # The throwaway repos below must not use your git settings (signing, hooks,
 # aliases). They only need a name to commit with.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_SYSTEM=/dev/null
@@ -54,8 +51,8 @@ in_dir() {
   (cd "$1" && shift && "$@")
 }
 
-# with_stand_ins <command...>: run with the pretend systemctl, sudo, gsettings
-# and clipboard. With no WAYLAND_DISPLAY, the clipboard spells skip wl-copy and
+# with_stand_ins <command...>: run with the pretend systemctl, sudo and
+# clipboard. With no WAYLAND_DISPLAY, the clipboard spells skip wl-copy and
 # use the pretend pbcopy, even on a Wayland desktop.
 with_stand_ins() {
   WAYLAND_DISPLAY='' PATH=$SPELLS/tests/stand-ins:$PATH "$@"
