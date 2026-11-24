@@ -120,7 +120,8 @@ expect "< hello >" env TERM=xterm showIt hello
 
 # --- howLongUntilChristmas ---------------------------------------------------
 # The spell asks `date` for the year and the day of the year. A pretend `date`
-# picks the day, and stand-ins take the notification and the song.
+# picks the day, and stand-ins take the notification and the song: notify-send
+# and pw-play on Linux, osascript and afplay on macOS.
 mkdir pretend-date
 cat >pretend-date/date <<'SH'
 #!/bin/sh

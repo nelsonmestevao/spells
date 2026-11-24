@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Stand-in for afplay in tests. Saves the name of the sound file, so the
+# tests never play it. It is the same file the pw-play stand-in writes.
+
+echo "$1" >"${STAND_IN_STATE:?}/played"
