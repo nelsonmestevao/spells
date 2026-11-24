@@ -1,8 +1,12 @@
-#!/usr/bin/env bash
+#!/usr/bin/env nix-shell
+#! nix-shell -I nixpkgs=https://github.com/NixOS/nixpkgs/archive/680275f0bb6afce84fbac3e75fc47c5f2272400b.tar.gz
+#! nix-shell -p "if stdenv.hostPlatform.isLinux then libnotify else null" "if stdenv.hostPlatform.isLinux then pipewire else null"
+#! nix-shell -i bash
 # Say how many days are left until Christmas, and play a Christmas song.
 #
-# Needs from your system: notify-send and pw-play on a Linux desktop. macOS
-# has what it takes (osascript and afplay).
+# On Linux, the header brings notify-send (from libnotify) and pw-play (from
+# pipewire). macOS has what it takes (osascript and afplay). Only nix-shell has
+# to be on your system.
 
 set -euo pipefail
 

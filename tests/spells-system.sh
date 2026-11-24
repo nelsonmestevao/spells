@@ -14,7 +14,9 @@ source "$(dirname "$0")/lib/checks.sh"
 # --- howLongUntilChristmas ---------------------------------------------------
 # The spell asks `date` for the year and the day of the year. A pretend `date`
 # picks the day, and stand-ins take the notification and the song: notify-send
-# and pw-play on Linux, osascript and afplay on macOS.
+# and pw-play on Linux, osascript and afplay on macOS. The test runs the spell
+# with bash, not through its nix-shell header: the header would put the real
+# notify-send and pw-play in front of the stand-ins.
 mkdir pretend-date
 cat >pretend-date/date <<'SH'
 #!/bin/sh
@@ -27,7 +29,7 @@ chmod +x pretend-date/date
 
 # notification_on <year> <day of the year>: what the spell says on that day.
 notification_on() {
-  PRETEND_YEAR=$1 PRETEND_DAY=$2 PATH=$TMP/pretend-date:$PATH with_stand_ins howLongUntilChristmas
+  PRETEND_YEAR=$1 PRETEND_DAY=$2 PATH=$TMP/pretend-date:$PATH with_stand_ins bash "$SPELLS/howLongUntilChristmas"
   cat "$STAND_IN_STATE/notification"
 }
 
